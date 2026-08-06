@@ -1,0 +1,10 @@
+# Phase 1 — dataset exploration
+numpy
+pandas
+matplotlib
+scikit-learn==1.6.1
+joblib
+pytest
+Flask
+Flask-Cors
+firebase-admin

@@ -1,0 +1,47 @@
+"""Test-only repository with the same behavior expected from Firestore."""
+
+from __future__ import annotations
+
+from copy import deepcopy
+from datetime import datetime, timezone
+
+
+class InMemoryUserRepository:
+    def __init__(self) -> None:
+        self.profiles: dict[str, dict[str, object]] = {}
+        self.favorites: dict[str, dict[str, dict[str, object]]] = {}
+        self.history: dict[str, list[dict[str, object]]] = {}
+
+    @staticmethod
+    def _now() -> str:
+        return datetime.now(timezone.utc).isoformat()
+
+    def get_profile(self, user_id: str) -> dict[str, object] | None:
+        profile = self.profiles.get(user_id)
+        return deepcopy(profile) if profile else None
+
+    def update_profile(self, user_id: str, values: dict[str, object]) -> dict[str, object]:
+        existing = self.profiles.get(user_id, {"user_id": user_id, "created_at": self._now()})
+        existing.update(values)
+        existing["updated_at"] = self._now()
+        self.profiles[user_id] = existing
+        return deepcopy(existing)
+
+    def list_favorites(self, user_id: str) -> list[dict[str, object]]:
+        return [deepcopy(item) for item in self.favorites.get(user_id, {}).values()]
+
+    def add_favorite(self, user_id: str, track: dict[str, object]) -> dict[str, object]:
+        bucket = self.favorites.setdefault(user_id, {})
+        stored = {**track, "added_at": bucket.get(track["track_id"], {}).get("added_at", self._now())}
+        bucket[str(track["track_id"])] = stored
+        return deepcopy(stored)
+
+    def remove_favorite(self, user_id: str, track_id: str) -> bool:
+        return self.favorites.get(user_id, {}).pop(track_id, None) is not None
+
+    def record_history(self, user_id: str, record: dict[str, object]) -> None:
+        self.history.setdefault(user_id, []).append({**record, "created_at": self._now()})
+
+    def list_history(self, user_id: str, limit: int) -> list[dict[str, object]]:
+        records = self.history.get(user_id, [])
+        return [deepcopy(record) for record in reversed(records[-limit:])]
