@@ -47,9 +47,14 @@ def test_recommendation_validation_and_search(client) -> None:
 
 def test_auth_profile_favorites_and_history(client) -> None:
     assert client.get("/api/profile").status_code == 401
-    profile = client.put("/api/profile", headers=AUTH, json={"display_name": "Mood User", "preferred_genres": ["acoustic"]})
+    profile = client.put("/api/profile", headers=AUTH, json={
+        "display_name": "Mood User", "preferred_genres": ["acoustic"],
+        "favorite_artists": ["Artist One", "Artist Two"], "bio": "Music helps me focus.",
+        "avatar_url": "https://example.test/profile.jpg",
+    })
     assert profile.status_code == 200
     assert profile.get_json()["profile"]["display_name"] == "Mood User"
+    assert profile.get_json()["profile"]["favorite_artists"] == ["Artist One", "Artist Two"]
 
     recommendation = client.post("/api/recommend", headers=AUTH, json={"mood": "stressed", "mode": "feel_better", "activity": "working", "limit": 1})
     track_id = recommendation.get_json()["recommendations"][0]["track_id"]

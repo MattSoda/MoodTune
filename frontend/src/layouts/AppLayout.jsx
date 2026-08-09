@@ -17,6 +17,7 @@ export default function AppLayout() {
       <header className="sticky top-0 z-10 border-b border-slate-800/80 bg-slate-950/85 backdrop-blur">
         <nav aria-label="Main navigation" className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-5 py-3">
           <NavLink to="/" className="mr-auto rounded-md px-1 text-xl font-bold tracking-tight text-violet-300">MoodTune</NavLink>
+          <NavLink to="/" end className={navClass}>Discover</NavLink>
           <NavLink to="/search" className={navClass}>Search</NavLink>
           {user ? <>
             {protectedLinks.map(([label, to]) => <NavLink key={to} to={to} className={navClass}>{label}</NavLink>)}

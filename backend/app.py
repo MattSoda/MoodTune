@@ -57,8 +57,23 @@ def _profile_payload(payload: dict[str, object]) -> dict[str, object]:
         if not isinstance(genres, list) or len(genres) > 20 or not all(isinstance(item, str) and item.strip() for item in genres):
             raise ValueError("preferred_genres must be a list of up to 20 non-empty strings.")
         updates["preferred_genres"] = sorted({item.strip().lower() for item in genres})
+    if "favorite_artists" in payload:
+        artists = payload["favorite_artists"]
+        if not isinstance(artists, list) or len(artists) > 20 or not all(isinstance(item, str) and item.strip() for item in artists):
+            raise ValueError("favorite_artists must be a list of up to 20 non-empty strings.")
+        updates["favorite_artists"] = sorted({item.strip() for item in artists}, key=str.lower)
+    if "bio" in payload:
+        bio = payload["bio"]
+        if not isinstance(bio, str) or len(bio.strip()) > 500:
+            raise ValueError("bio must be a string up to 500 characters.")
+        updates["bio"] = bio.strip()
+    if "avatar_url" in payload:
+        avatar_url = payload["avatar_url"]
+        if not isinstance(avatar_url, str) or len(avatar_url) > 2_000 or not avatar_url.startswith("https://"):
+            raise ValueError("avatar_url must be a valid HTTPS URL.")
+        updates["avatar_url"] = avatar_url
     if not updates:
-        raise ValueError("Provide display_name or preferred_genres to update the profile.")
+        raise ValueError("Provide at least one profile field to update.")
     return updates
 
 
