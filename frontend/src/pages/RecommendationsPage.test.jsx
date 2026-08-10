@@ -53,6 +53,16 @@ test('clicking Play mounts the correct Spotify embed', async () => {
   expect(screen.getByTitle('Spotify player')).toHaveAttribute('src', `https://open.spotify.com/embed/track/${FIRST_TRACK_ID}`)
 })
 
+test('clicking the song card opens its Spotify player', async () => {
+  const user = userEvent.setup()
+  renderRecommendations()
+  const songTitle = await screen.findByText('Brighter Day')
+
+  await user.click(songTitle)
+
+  expect(screen.getByTitle('Spotify player')).toHaveAttribute('src', `https://open.spotify.com/embed/track/${FIRST_TRACK_ID}`)
+})
+
 test('playing another song replaces the mounted iframe', async () => {
   const user = userEvent.setup()
   renderRecommendations()

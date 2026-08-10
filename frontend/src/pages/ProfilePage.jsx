@@ -64,26 +64,30 @@ export default function ProfilePage() {
   if (isLoading) return <LoadingState label="Loading profile…" />
   const displayedAvatar = avatarUrl || user?.photoURL
   return (
-    <section className="max-w-2xl space-y-6">
-      <div>
+    <section className="content-page max-w-3xl">
+      <div className="page-header">
+        <p className="page-eyebrow">Your listening identity</p>
         <h1 className="page-title">Profile and preferences</h1>
         <p className="page-copy mt-2">Your mood remains the strongest recommendation signal. These preferences help refine the results.</p>
       </div>
-      <form onSubmit={save} className="surface space-y-5 p-5 sm:p-7">
+      <form onSubmit={save} className="surface relative space-y-6 overflow-hidden p-5 sm:p-8">
+        <span className="absolute inset-x-16 top-0 h-px bg-gradient-to-r from-transparent via-lavender-300/50 to-transparent" />
         <ErrorMessage message={error} />
-        {notice && <p className="text-sm text-emerald-200">{notice}</p>}
+        {notice && <p className="notice-success">{notice}</p>}
 
         <div className="flex flex-wrap items-center gap-4">
-          {displayedAvatar ? <img src={displayedAvatar} alt="Profile avatar" className="h-20 w-20 rounded-full border border-violet-400/50 object-cover" /> : <div aria-hidden="true" className="flex h-20 w-20 items-center justify-center rounded-full bg-violet-500/20 text-2xl font-bold text-violet-200">{displayName.trim().slice(0, 1).toUpperCase() || '?'}</div>}
-          <label className="text-sm font-medium">Profile image <span className="font-normal text-slate-400">(optional, 5 MB max)</span><input type="file" accept="image/*" onChange={(event) => setImageFile(event.target.files?.[0] || null)} className="mt-2 block w-full text-sm text-slate-300 file:mr-3 file:rounded file:border-0 file:bg-violet-500/20 file:px-3 file:py-2 file:text-violet-100" /></label>
+          {displayedAvatar ? <img src={displayedAvatar} alt="Profile avatar" className="h-20 w-20 rounded-2xl border border-lavender-300/40 object-cover shadow-[0_0_24px_rgba(167,139,250,.15)]" /> : <div aria-hidden="true" className="flex h-20 w-20 items-center justify-center rounded-2xl border border-lavender-300/20 bg-lavender-300/[0.1] text-2xl font-bold text-lavender-200">{displayName.trim().slice(0, 1).toUpperCase() || '?'}</div>}
+          <label className="text-sm font-medium text-zinc-200">Profile image <span className="font-normal text-zinc-500">(optional, 5 MB max)</span><input type="file" accept="image/*" onChange={(event) => setImageFile(event.target.files?.[0] || null)} className="mt-2 block w-full text-sm text-zinc-400 file:mr-3 file:rounded-lg file:border-0 file:bg-lavender-300/[0.12] file:px-3 file:py-2 file:text-lavender-100" /></label>
         </div>
 
-        <label className="block text-sm font-medium">Account email<input value={user?.email || ''} readOnly className="input-control mt-1 w-full cursor-not-allowed opacity-70" /></label>
-        <label className="block text-sm font-medium">Display name<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength="80" className="input-control mt-1 w-full" /></label>
-        <label className="block text-sm font-medium">About me <span className="font-normal text-slate-400">({bio.length}/500)</span><textarea value={bio} onChange={(event) => setBio(event.target.value)} maxLength="500" rows="4" placeholder="Tell us a little about your music taste." className="input-control mt-1 w-full resize-y" /></label>
-        <label className="block text-sm font-medium">Preferred genres<p className="mt-1 text-xs font-normal text-slate-400">Separate up to 20 genres with commas.</p><input value={genres} onChange={(event) => setGenres(event.target.value)} placeholder="pop, jazz, indie" className="input-control mt-1 w-full" /></label>
-        <label className="block text-sm font-medium">Favorite artists<p className="mt-1 text-xs font-normal text-slate-400">Separate up to 20 artists with commas.</p><input value={artists} onChange={(event) => setArtists(event.target.value)} placeholder="Adele, Coldplay, The Weeknd" className="input-control mt-1 w-full" /></label>
-        <button disabled={isSaving} className="button-primary px-4 py-2 disabled:opacity-60">{isSaving ? 'Saving…' : 'Save profile'}</button>
+        <label className="block text-sm font-medium text-zinc-200">Account email<input value={user?.email || ''} readOnly className="input-control cursor-not-allowed opacity-60" /></label>
+        <label className="block text-sm font-medium text-zinc-200">Display name<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength="80" className="input-control" /></label>
+        <label className="block text-sm font-medium text-zinc-200">About me <span className="font-normal text-zinc-500">({bio.length}/500)</span><textarea value={bio} onChange={(event) => setBio(event.target.value)} maxLength="500" rows="4" placeholder="Tell us a little about your music taste." className="input-control resize-y" /></label>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <label className="block text-sm font-medium text-zinc-200">Preferred genres<p className="mt-1 text-xs font-normal text-zinc-500">Separate up to 20 genres with commas.</p><input value={genres} onChange={(event) => setGenres(event.target.value)} placeholder="pop, jazz, indie" className="input-control" /></label>
+          <label className="block text-sm font-medium text-zinc-200">Favorite artists<p className="mt-1 text-xs font-normal text-zinc-500">Separate up to 20 artists with commas.</p><input value={artists} onChange={(event) => setArtists(event.target.value)} placeholder="Adele, Coldplay, The Weeknd" className="input-control" /></label>
+        </div>
+        <button disabled={isSaving} className="button-primary px-5 py-3 disabled:opacity-60">{isSaving ? 'Saving…' : 'Save profile'}</button>
       </form>
     </section>
   )

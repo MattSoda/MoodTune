@@ -12,7 +12,7 @@ test('submits a predefined mood and recommendation mode', async () => {
   const user = userEvent.setup()
   render(<MemoryRouter initialEntries={['/']}><Routes><Route path="/" element={<HomePage />} /><Route path="/recommendations" element={<Destination />} /></Routes></MemoryRouter>)
   await user.click(screen.getByRole('button', { name: /sad/i }))
-  await user.selectOptions(screen.getByLabelText(/What are you doing right now/i), 'studying')
+  await user.click(screen.getByRole('button', { name: /Studying/i }))
   await user.click(screen.getByLabelText('Jazz'))
   await user.click(screen.getByLabelText(/Make Me Feel Better/i))
   await user.click(screen.getByRole('button', { name: /Get recommendations/i }))

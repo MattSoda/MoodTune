@@ -1,3 +1,1 @@
-export default function FeaturePlaceholder({ title, description }) {
-  return <section className="space-y-2"><h1 className="text-3xl font-bold">{title}</h1><p className="max-w-2xl text-slate-300">{description}</p></section>
-}
+export default function FeaturePlaceholder({ title, description }) { return <section className="content-page"><div className="page-header"><p className="page-eyebrow">MoodTune</p><h1 className="page-title">{title}</h1><p className="page-copy">{description}</p></div><div className="empty-state">This experience is coming soon.</div></section> }
