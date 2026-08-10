@@ -12,6 +12,8 @@ function commaSeparatedValues(value) {
 export default function ProfilePage() {
   const { user } = useAuth()
   const [displayName, setDisplayName] = useState('')
+  const [username, setUsername] = useState('')
+  const [accountEmail, setAccountEmail] = useState(user?.email || '')
   const [genres, setGenres] = useState('')
   const [artists, setArtists] = useState('')
   const [bio, setBio] = useState('')
@@ -26,7 +28,9 @@ export default function ProfilePage() {
     moodTuneApi.profile()
       .then((response) => {
         const profile = response.profile || {}
-        setDisplayName(profile.display_name || '')
+        setDisplayName(profile.name || profile.display_name || user?.displayName || '')
+        setUsername(profile.username || '')
+        setAccountEmail(profile.email || user?.email || '')
         setGenres((profile.preferred_genres || []).join(', '))
         setArtists((profile.favorite_artists || []).join(', '))
         setBio(profile.bio || '')
@@ -64,7 +68,7 @@ export default function ProfilePage() {
   if (isLoading) return <LoadingState label="Loading profile…" />
   const displayedAvatar = avatarUrl || user?.photoURL
   return (
-    <section className="content-page max-w-3xl">
+    <section className="content-page mx-auto max-w-3xl">
       <div className="page-header">
         <p className="page-eyebrow">Your listening identity</p>
         <h1 className="page-title">Profile and preferences</h1>
@@ -80,8 +84,11 @@ export default function ProfilePage() {
           <label className="text-sm font-medium text-zinc-200">Profile image <span className="font-normal text-zinc-500">(optional, 5 MB max)</span><input type="file" accept="image/*" onChange={(event) => setImageFile(event.target.files?.[0] || null)} className="mt-2 block w-full text-sm text-zinc-400 file:mr-3 file:rounded-lg file:border-0 file:bg-lavender-300/[0.12] file:px-3 file:py-2 file:text-lavender-100" /></label>
         </div>
 
-        <label className="block text-sm font-medium text-zinc-200">Account email<input value={user?.email || ''} readOnly className="input-control cursor-not-allowed opacity-60" /></label>
-        <label className="block text-sm font-medium text-zinc-200">Display name<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength="80" className="input-control" /></label>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <label className="block text-sm font-medium text-zinc-200">Username<input value={username} readOnly className="input-control cursor-not-allowed opacity-60" /></label>
+          <label className="block text-sm font-medium text-zinc-200">Account email<input value={accountEmail} readOnly className="input-control cursor-not-allowed opacity-60" /></label>
+        </div>
+        <label className="block text-sm font-medium text-zinc-200">Name<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength="80" className="input-control" /></label>
         <label className="block text-sm font-medium text-zinc-200">About me <span className="font-normal text-zinc-500">({bio.length}/500)</span><textarea value={bio} onChange={(event) => setBio(event.target.value)} maxLength="500" rows="4" placeholder="Tell us a little about your music taste." className="input-control resize-y" /></label>
         <div className="grid gap-5 sm:grid-cols-2">
           <label className="block text-sm font-medium text-zinc-200">Preferred genres<p className="mt-1 text-xs font-normal text-zinc-500">Separate up to 20 genres with commas.</p><input value={genres} onChange={(event) => setGenres(event.target.value)} placeholder="pop, jazz, indie" className="input-control" /></label>

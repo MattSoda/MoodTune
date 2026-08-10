@@ -18,9 +18,9 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/recommendations" element={<RecommendationsPage />} />
         <Route path="/search" element={<SearchPage />} />
         <Route element={<ProtectedRoute />}>
+          <Route path="/recommendations" element={<RecommendationsPage />} />
           <Route path="/favorites" element={<FavoritesPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/profile" element={<ProfilePage />} />

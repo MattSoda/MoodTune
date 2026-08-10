@@ -16,6 +16,29 @@ class FirestoreUserRepository:
         snapshot = self._user(user_id).get()
         return snapshot.to_dict() if snapshot.exists else None
 
+    def create_user(self, user_id: str, values: dict[str, object]) -> dict[str, object]:
+        from google.cloud import firestore
+
+        user = self._user(user_id)
+        username = self.client.collection("usernames").document(str(values["username_normalized"]))
+        now = datetime.now(timezone.utc)
+        payload = {**values, "user_id": user_id, "created_at": now, "updated_at": now}
+        transaction = self.client.transaction()
+
+        @firestore.transactional
+        def create(transaction):
+            user_snapshot = user.get(transaction=transaction)
+            username_snapshot = username.get(transaction=transaction)
+            if user_snapshot.exists:
+                raise ValueError("A user profile already exists for this account.")
+            if username_snapshot.exists:
+                raise ValueError("That username is already taken.")
+            transaction.set(user, payload)
+            transaction.set(username, {"user_id": user_id, "created_at": now})
+
+        create(transaction)
+        return payload
+
     def update_profile(self, user_id: str, values: dict[str, object]) -> dict[str, object]:
         document = self._user(user_id)
         existing = self.get_profile(user_id)

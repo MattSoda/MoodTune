@@ -10,6 +10,7 @@ class FirebaseUnavailableRepository:
     def _raise(self):
         raise RuntimeError(self.message)
 
+    def create_user(self, user_id: str, values: dict[str, object]): self._raise()
     def get_profile(self, user_id: str): self._raise()
     def update_profile(self, user_id: str, values: dict[str, object]): self._raise()
     def list_favorites(self, user_id: str): self._raise()

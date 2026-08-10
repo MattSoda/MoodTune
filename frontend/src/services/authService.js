@@ -1,9 +1,12 @@
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signOut,
+  updateProfile,
 } from 'firebase/auth'
+import apiClient from './apiClient'
 import { firebaseAuth, isFirebaseConfigured } from './firebase'
 
 function configuredAuth() {
@@ -21,8 +24,16 @@ export function observeAuthState(callback) {
   return onAuthStateChanged(firebaseAuth, callback)
 }
 
-export function registerWithEmail(email, password) {
-  return createUserWithEmailAndPassword(configuredAuth(), email, password)
+export async function registerWithEmail({ name, username, email, password }) {
+  const credential = await createUserWithEmailAndPassword(configuredAuth(), email, password)
+  try {
+    await updateProfile(credential.user, { displayName: name })
+    await apiClient.post('/auth/register', { name, username, email })
+    return credential
+  } catch (error) {
+    await deleteUser(credential.user).catch(() => undefined)
+    throw new Error(error.response?.data?.error?.message || error.message || 'Unable to create your account.')
+  }
 }
 
 export function loginWithEmail(email, password) {

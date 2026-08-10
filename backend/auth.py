@@ -26,6 +26,7 @@ def optional_user_id() -> str | None:
         decoded = current_app.extensions["token_verifier"](token)
     except Exception as exc:
         raise PermissionError("Invalid or expired Firebase ID token.") from exc
+    g.auth_claims = decoded
     return str(decoded["uid"])
 
 

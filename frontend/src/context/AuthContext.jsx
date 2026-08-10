@@ -19,7 +19,7 @@ export function AuthProvider({ children }) {
     user,
     isLoading,
     login: (email, password) => loginWithEmail(email, password),
-    register: (email, password) => registerWithEmail(email, password),
+    register: (values) => registerWithEmail(values),
     logout,
   }), [user, isLoading])
 

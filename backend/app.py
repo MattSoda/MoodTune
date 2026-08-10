@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 import sys
 
 # Support both `python -m flask` from the project root and `python app.py`
@@ -21,6 +22,10 @@ from backend.services.catalogue_service import CatalogueService
 from backend.services.recommendation_service import RecommendationService
 from backend.utils import bounded_limit, json_body, success
 from ml.config.recommendation_config import ACTIVITIES, PREFERRED_GENRES
+
+
+USERNAME_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_]{2,29}$")
+EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 
 def _firebase_dependencies(settings: Settings):
@@ -52,6 +57,7 @@ def _profile_payload(payload: dict[str, object]) -> dict[str, object]:
         if not isinstance(name, str) or not name.strip() or len(name.strip()) > 80:
             raise ValueError("display_name must be a non-empty string up to 80 characters.")
         updates["display_name"] = name.strip()
+        updates["name"] = name.strip()
     if "preferred_genres" in payload:
         genres = payload["preferred_genres"]
         if not isinstance(genres, list) or len(genres) > 20 or not all(isinstance(item, str) and item.strip() for item in genres):
@@ -75,6 +81,25 @@ def _profile_payload(payload: dict[str, object]) -> dict[str, object]:
     if not updates:
         raise ValueError("Provide at least one profile field to update.")
     return updates
+
+
+def _registration_payload(payload: dict[str, object]) -> dict[str, object]:
+    name = payload.get("name")
+    username = payload.get("username")
+    email = payload.get("email")
+    if not isinstance(name, str) or not 2 <= len(name.strip()) <= 80:
+        raise ValueError("name must contain between 2 and 80 characters.")
+    if not isinstance(username, str) or not USERNAME_PATTERN.fullmatch(username.strip()):
+        raise ValueError("username must be 3-30 characters, start with a letter, and contain only letters, numbers, or underscores.")
+    if not isinstance(email, str) or len(email.strip()) > 254 or not EMAIL_PATTERN.fullmatch(email.strip()):
+        raise ValueError("email must be a valid email address.")
+    return {
+        "name": name.strip(),
+        "display_name": name.strip(),
+        "username": username.strip(),
+        "username_normalized": username.strip().lower(),
+        "email": email.strip().lower(),
+    }
 
 
 def _recommendation_payload(payload: dict[str, object]) -> dict[str, object]:
@@ -151,6 +176,15 @@ def create_app(settings: Settings | None = None, repository=None, token_verifier
     @require_auth
     def verify_authentication():
         return success({"user_id": g.user_id})
+
+    @app.post("/api/auth/register")
+    @require_auth
+    def register_user():
+        values = _registration_payload(json_body())
+        verified_email = str(getattr(g, "auth_claims", {}).get("email", "")).strip().lower()
+        if verified_email and verified_email != values["email"]:
+            raise PermissionError("The email does not match the authenticated Firebase account.")
+        return success({"user": repository.create_user(g.user_id, values)}, 201)
 
     @app.post("/api/recommend")
     def recommend():

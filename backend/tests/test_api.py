@@ -54,6 +54,7 @@ def test_auth_profile_favorites_and_history(client) -> None:
     })
     assert profile.status_code == 200
     assert profile.get_json()["profile"]["display_name"] == "Mood User"
+    assert profile.get_json()["profile"]["name"] == "Mood User"
     assert profile.get_json()["profile"]["favorite_artists"] == ["Artist One", "Artist Two"]
 
     recommendation = client.post("/api/recommend", headers=AUTH, json={"mood": "stressed", "mode": "feel_better", "activity": "working", "limit": 1})
@@ -64,6 +65,24 @@ def test_auth_profile_favorites_and_history(client) -> None:
     assert len(history) == 1
     assert history[0]["activity"] == "working"
     assert client.delete(f"/api/favorites/{track_id}", headers=AUTH).status_code == 200
+
+
+def test_registers_application_user_and_validates_fields(client) -> None:
+    response = client.post("/api/auth/register", headers=AUTH, json={
+        "name": "Mood User", "username": "mood_user", "email": "mood@example.com",
+    })
+    assert response.status_code == 201
+    user = response.get_json()["user"]
+    assert user["display_name"] == "Mood User"
+    assert user["username_normalized"] == "mood_user"
+
+    assert client.post("/api/auth/register", json={}).status_code == 401
+    assert client.post("/api/auth/register", headers=AUTH, json={
+        "name": "M", "username": "not valid", "email": "invalid",
+    }).status_code == 400
+    assert client.post("/api/auth/register", headers=AUTH, json={
+        "name": "Another User", "username": "another", "email": "another@example.com",
+    }).status_code == 400
 
 
 def test_rejects_invalid_bearer_token(client) -> None:

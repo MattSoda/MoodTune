@@ -20,6 +20,17 @@ class InMemoryUserRepository:
         profile = self.profiles.get(user_id)
         return deepcopy(profile) if profile else None
 
+    def create_user(self, user_id: str, values: dict[str, object]) -> dict[str, object]:
+        if user_id in self.profiles:
+            raise ValueError("A user profile already exists for this account.")
+        username = values["username_normalized"]
+        if any(profile.get("username_normalized") == username for profile in self.profiles.values()):
+            raise ValueError("That username is already taken.")
+        now = self._now()
+        profile = {**values, "user_id": user_id, "created_at": now, "updated_at": now}
+        self.profiles[user_id] = profile
+        return deepcopy(profile)
+
     def update_profile(self, user_id: str, values: dict[str, object]) -> dict[str, object]:
         existing = self.profiles.get(user_id, {"user_id": user_id, "created_at": self._now()})
         existing.update(values)

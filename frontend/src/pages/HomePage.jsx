@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ACTIVITIES, PREFERRED_GENRES, RECOMMENDATION_MODES, USER_MOODS } from '../constants/moods'
+import useRequireAuth from '../hooks/useRequireAuth'
+import { saveRecommendationDraft } from '../utils/recommendationDraft'
 
 const MOOD_ICONS = {
   happy: '☻', sad: '☂', angry: '♨', calm: '≋', relaxed: '♨', energetic: 'ϟ',
@@ -19,6 +21,7 @@ const MODE_COPY = {
 
 export default function HomePage() {
   const navigate = useNavigate()
+  const requireAuth = useRequireAuth()
   const [mood, setMood] = useState('')
   const [activity, setActivity] = useState('')
   const [preferredGenres, setPreferredGenres] = useState([])
@@ -28,7 +31,9 @@ export default function HomePage() {
   const submit = (event) => {
     event.preventDefault()
     if (!mood) return setError('Choose a mood before requesting music.')
-    navigate('/recommendations', { state: { mood, mode, activity: activity || undefined, preferredGenres } })
+    const selection = { mood, mode, activity: activity || undefined, preferredGenres }
+    saveRecommendationDraft(selection)
+    requireAuth('/recommendations', () => navigate('/recommendations', { state: selection }))
   }
 
   const toggleGenre = (genre) => setPreferredGenres((current) => current.includes(genre)
