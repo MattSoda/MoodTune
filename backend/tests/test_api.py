@@ -45,7 +45,7 @@ def test_recommendation_validation_and_search(client) -> None:
     assert len(response.get_json()["results"]) <= 3
 
 
-def test_search_discovery_deduplicates_deletes_and_ranks_queries(client) -> None:
+def test_search_discovery_separates_recent_related_and_popular_tracks(client) -> None:
     for query in ["jazz", "pop", "jazz"]:
         response = client.get(f"/api/search?q={query}&record=true", headers={**AUTH, "X-MoodTune-Region": "mm"})
         assert response.status_code == 200
@@ -54,9 +54,13 @@ def test_search_discovery_deduplicates_deletes_and_ranks_queries(client) -> None
     assert discovery.status_code == 200
     body = discovery.get_json()
     assert [item["query"] for item in body["recent"]] == ["jazz", "pop"]
-    assert body["trending"][0]["query"] == "jazz"
-    assert body["trending"][0]["count"] == 2
-    assert body["meta"]["cohort"] == "region:mm"
+    assert all(item["source"] == "catalogue_popularity" for item in body["trending"])
+    assert body["trending"] == sorted(body["trending"], key=lambda item: item["popularity"], reverse=True)
+    assert all(item["source"] == "search_similarity" for item in body["recommended"])
+    assert {item["query"].casefold() for item in body["recommended"]}.isdisjoint({"jazz", "pop"})
+    assert all(item.get("track_id") and item.get("artists") for item in body["recommended"])
+    assert body["meta"]["cohort"] == "global"
+    assert body["meta"]["trending_source"] == "spotify_catalogue_popularity"
     assert body["recommended"]
 
     recent_id = body["recent"][0]["id"]
