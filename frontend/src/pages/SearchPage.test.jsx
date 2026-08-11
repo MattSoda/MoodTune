@@ -10,8 +10,8 @@ vi.mock('../services/moodTuneApi', () => ({
     search: vi.fn().mockResolvedValue({ results: [{ track_id: TRACK_ID, track_name: 'Search Result', artists: 'MoodTune Artist', genres: 'pop', predicted_mood: 'happy', popularity: 80 }] }),
     searchDiscovery: vi.fn().mockResolvedValue({
       recent: [{ id: '0123456789abcdef0123', query: 'late night jazz' }],
-      recommended: [{ query: 'acoustic', reason: 'From your preferred genres' }],
-      trending: [{ query: 'dance', count: 4 }],
+      recommended: [{ query: 'Related Song', label: 'Related Song — Similar Artist', reason: 'Related to “late night jazz”', source: 'search_similarity' }],
+      trending: [{ query: 'Popular Song', label: 'Popular Song — Chart Artist', popularity: 100, source: 'catalogue_popularity' }],
       meta: { cohort: 'global', cold_start: false },
     }),
     deleteRecentSearch: vi.fn().mockResolvedValue({}),
@@ -90,6 +90,6 @@ test('surfaces discovery sections and explicitly deletes a recent query', async 
   expect(moodTuneApi.deleteRecentSearch).toHaveBeenCalledWith('0123456789abcdef0123')
   expect(screen.queryByText('late night jazz')).not.toBeInTheDocument()
 
-  await user.click(screen.getByRole('button', { name: 'acoustic' }))
-  expect(moodTuneApi.search).toHaveBeenCalledWith(expect.objectContaining({ q: 'acoustic', record: true }))
+  await user.click(screen.getByRole('button', { name: 'Related Song — Similar Artist' }))
+  expect(moodTuneApi.search).toHaveBeenCalledWith(expect.objectContaining({ q: 'Related Song', record: true }))
 })

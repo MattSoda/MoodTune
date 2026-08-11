@@ -37,7 +37,7 @@ function DiscoverySection({ title, subtitle, items, onChoose, onDelete, onClear 
       {onClear && <button type="button" onClick={onClear} className="text-xs text-zinc-500 transition hover:text-lavender-200">Clear all</button>}
     </div>
     <div className="mt-3 flex flex-wrap gap-2">{items.map((item) => <div key={item.id || `${title}-${item.query}`} className="group/chip flex max-w-full items-center rounded-full border border-white/[0.09] bg-white/[0.035] transition hover:border-lavender-300/45 hover:bg-lavender-300/[0.07]">
-      <button type="button" onClick={() => onChoose(item.query)} title={item.reason || undefined} className="max-w-[15rem] truncate px-3 py-2 text-left text-xs text-zinc-300 transition group-hover/chip:text-lavender-100">{item.query}</button>
+      <button type="button" onClick={() => onChoose(item.query)} title={item.reason || undefined} className="max-w-[15rem] truncate px-3 py-2 text-left text-xs text-zinc-300 transition group-hover/chip:text-lavender-100">{item.label || item.query}</button>
       {onDelete && <button type="button" onClick={() => onDelete(item.id)} aria-label={`Delete recent search ${item.query}`} className="mr-1 grid h-6 w-6 place-items-center rounded-full text-zinc-600 transition hover:bg-white/[0.08] hover:text-zinc-200">×</button>}
     </div>)}</div>
   </section>
@@ -47,8 +47,8 @@ function SearchDiscovery({ discovery, onChoose, onDelete, onClear }) {
   if (!discovery) return null
   return <div className="grid gap-4 rounded-2xl border border-white/[0.08] bg-[#0c0c0f]/80 p-4 sm:grid-cols-3 sm:p-5">
     <DiscoverySection title="Recent" subtitle="Pick up where you left off" items={discovery.recent} onChoose={onChoose} onDelete={onDelete} onClear={discovery.recent?.length ? onClear : undefined} />
-    <DiscoverySection title="Recommended for you" subtitle={discovery.meta?.cold_start ? 'Popular places to start' : 'Shaped by your listening'} items={discovery.recommended} onChoose={onChoose} />
-    <DiscoverySection title="Trending" subtitle={discovery.meta?.cohort === 'global' ? 'Popular in the last 24 hours' : `Popular in ${discovery.meta?.cohort?.replace('region:', '')}`} items={discovery.trending} onChoose={onChoose} />
+    <DiscoverySection title="Recommended for you" subtitle={discovery.meta?.cold_start ? 'Popular places to start' : 'Songs related to your searches'} items={discovery.recommended} onChoose={onChoose} />
+    <DiscoverySection title="Trending" subtitle="Most popular songs in the catalogue" items={discovery.trending} onChoose={onChoose} />
   </div>
 }
 

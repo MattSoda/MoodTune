@@ -156,7 +156,7 @@ def create_app(settings: Settings | None = None, repository=None, token_verifier
     app.extensions["firebase_error"] = firebase_error
     catalogue = CatalogueService()
     recommendation_service = RecommendationService(repository)
-    search_discovery_service = SearchDiscoveryService(repository)
+    search_discovery_service = SearchDiscoveryService(repository, catalogue)
 
     @app.errorhandler(ValueError)
     def handle_validation_error(error):
