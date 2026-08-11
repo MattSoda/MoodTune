@@ -29,6 +29,7 @@ ACTIVITY_FEATURE_TARGETS: Final[dict[str, dict[str, float]]] = {
 
 PREFERRED_GENRES: Final[tuple[str, ...]] = (
     "pop", "rock", "hip-hop", "jazz", "edm", "classical", "r-n-b", "country", "indie", "metal",
+    "reggae", "blues", "folk", "soul", "funk", "latin",
 )
 
 # User states without a direct song-mood class map to the nearest available

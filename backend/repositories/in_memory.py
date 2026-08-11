@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import datetime, timezone
+import hashlib
 
 
 class InMemoryUserRepository:
@@ -11,6 +12,8 @@ class InMemoryUserRepository:
         self.profiles: dict[str, dict[str, object]] = {}
         self.favorites: dict[str, dict[str, dict[str, object]]] = {}
         self.history: dict[str, list[dict[str, object]]] = {}
+        self.recent_searches: dict[str, dict[str, dict[str, object]]] = {}
+        self.search_events: list[dict[str, object]] = []
 
     @staticmethod
     def _now() -> str:
@@ -56,3 +59,31 @@ class InMemoryUserRepository:
     def list_history(self, user_id: str, limit: int) -> list[dict[str, object]]:
         records = self.history.get(user_id, [])
         return [deepcopy(record) for record in reversed(records[-limit:])]
+
+    def record_search(self, user_id: str | None, query: str, region: str | None) -> None:
+        now = self._now()
+        normalized = " ".join(query.lower().split())
+        search_id = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:20]
+        event = {"query": query, "normalized_query": normalized, "region": region, "searched_at": now}
+        self.search_events.append(event)
+        if user_id:
+            self.recent_searches.setdefault(user_id, {})[search_id] = {
+                **event, "id": search_id,
+            }
+
+    def list_recent_searches(self, user_id: str, limit: int) -> list[dict[str, object]]:
+        records = self.recent_searches.get(user_id, {}).values()
+        ordered = sorted(records, key=lambda item: str(item["searched_at"]), reverse=True)
+        return [deepcopy(record) for record in ordered[:limit]]
+
+    def delete_recent_search(self, user_id: str, search_id: str) -> bool:
+        return self.recent_searches.get(user_id, {}).pop(search_id, None) is not None
+
+    def clear_recent_searches(self, user_id: str) -> int:
+        count = len(self.recent_searches.get(user_id, {}))
+        self.recent_searches[user_id] = {}
+        return count
+
+    def list_search_events(self, since: object) -> list[dict[str, object]]:
+        cutoff = since.isoformat() if hasattr(since, "isoformat") else str(since)
+        return [deepcopy(event) for event in self.search_events if str(event["searched_at"]) >= cutoff]

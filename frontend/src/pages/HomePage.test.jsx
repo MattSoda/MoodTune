@@ -25,9 +25,10 @@ test('submits a predefined mood and recommendation mode', async () => {
   await user.click(screen.getByRole('button', { name: /sad/i }))
   await user.click(screen.getByRole('button', { name: /Studying/i }))
   await user.click(screen.getByLabelText('Jazz'))
+  await user.click(screen.getByLabelText('Reggae'))
   await user.click(screen.getByLabelText(/Make Me Feel Better/i))
   await user.click(screen.getByRole('button', { name: /Get recommendations/i }))
-  expect(screen.getByText('sad:feel_better:studying:jazz')).toBeInTheDocument()
+  expect(screen.getByText('sad:feel_better:studying:jazz,reggae')).toBeInTheDocument()
 })
 
 test('lets a signed-out user select options and checks auth on recommendation', async () => {

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import hashlib
 
 
 class FirestoreUserRepository:
@@ -69,4 +70,36 @@ class FirestoreUserRepository:
 
     def list_history(self, user_id: str, limit: int) -> list[dict[str, object]]:
         query = self._user(user_id).collection("history").order_by("created_at", direction="DESCENDING").limit(limit)
+        return [snapshot.to_dict() for snapshot in query.stream()]
+
+    def record_search(self, user_id: str | None, query: str, region: str | None) -> None:
+        normalized = " ".join(query.lower().split())
+        now = datetime.now(timezone.utc)
+        event = {"query": query, "normalized_query": normalized, "region": region, "searched_at": now}
+        self.client.collection("search_events").add(event)
+        if user_id:
+            search_id = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:20]
+            self._user(user_id).collection("recent_searches").document(search_id).set({
+                **event, "id": search_id,
+            })
+
+    def list_recent_searches(self, user_id: str, limit: int) -> list[dict[str, object]]:
+        query = self._user(user_id).collection("recent_searches").order_by("searched_at", direction="DESCENDING").limit(limit)
+        return [snapshot.to_dict() for snapshot in query.stream()]
+
+    def delete_recent_search(self, user_id: str, search_id: str) -> bool:
+        reference = self._user(user_id).collection("recent_searches").document(search_id)
+        exists = reference.get().exists
+        if exists:
+            reference.delete()
+        return exists
+
+    def clear_recent_searches(self, user_id: str) -> int:
+        snapshots = list(self._user(user_id).collection("recent_searches").stream())
+        for snapshot in snapshots:
+            snapshot.reference.delete()
+        return len(snapshots)
+
+    def list_search_events(self, since: object) -> list[dict[str, object]]:
+        query = self.client.collection("search_events").where("searched_at", ">=", since)
         return [snapshot.to_dict() for snapshot in query.stream()]

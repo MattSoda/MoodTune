@@ -25,4 +25,7 @@ export const PREFERRED_GENRES = [
   { value: 'edm', label: 'EDM' }, { value: 'classical', label: 'Classical' },
   { value: 'r-n-b', label: 'R&B' }, { value: 'country', label: 'Country' },
   { value: 'indie', label: 'Indie' }, { value: 'metal', label: 'Metal' },
+  { value: 'reggae', label: 'Reggae' }, { value: 'blues', label: 'Blues' },
+  { value: 'folk', label: 'Folk' }, { value: 'soul', label: 'Soul' },
+  { value: 'funk', label: 'Funk' }, { value: 'latin', label: 'Latin' },
 ]

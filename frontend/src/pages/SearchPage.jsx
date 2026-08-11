@@ -29,6 +29,29 @@ function MoodFilter({ value, onChange }) {
   </details>
 }
 
+function DiscoverySection({ title, subtitle, items, onChoose, onDelete, onClear }) {
+  if (!items?.length) return null
+  return <section className="search-discovery-section" aria-label={title}>
+    <div className="flex items-end justify-between gap-4">
+      <div><h2 className="text-sm font-semibold text-zinc-100">{title}</h2><p className="mt-0.5 text-xs text-zinc-500">{subtitle}</p></div>
+      {onClear && <button type="button" onClick={onClear} className="text-xs text-zinc-500 transition hover:text-lavender-200">Clear all</button>}
+    </div>
+    <div className="mt-3 flex flex-wrap gap-2">{items.map((item) => <div key={item.id || `${title}-${item.query}`} className="group/chip flex max-w-full items-center rounded-full border border-white/[0.09] bg-white/[0.035] transition hover:border-lavender-300/45 hover:bg-lavender-300/[0.07]">
+      <button type="button" onClick={() => onChoose(item.query)} title={item.reason || undefined} className="max-w-[15rem] truncate px-3 py-2 text-left text-xs text-zinc-300 transition group-hover/chip:text-lavender-100">{item.query}</button>
+      {onDelete && <button type="button" onClick={() => onDelete(item.id)} aria-label={`Delete recent search ${item.query}`} className="mr-1 grid h-6 w-6 place-items-center rounded-full text-zinc-600 transition hover:bg-white/[0.08] hover:text-zinc-200">×</button>}
+    </div>)}</div>
+  </section>
+}
+
+function SearchDiscovery({ discovery, onChoose, onDelete, onClear }) {
+  if (!discovery) return null
+  return <div className="grid gap-4 rounded-2xl border border-white/[0.08] bg-[#0c0c0f]/80 p-4 sm:grid-cols-3 sm:p-5">
+    <DiscoverySection title="Recent" subtitle="Pick up where you left off" items={discovery.recent} onChoose={onChoose} onDelete={onDelete} onClear={discovery.recent?.length ? onClear : undefined} />
+    <DiscoverySection title="Recommended for you" subtitle={discovery.meta?.cold_start ? 'Popular places to start' : 'Shaped by your listening'} items={discovery.recommended} onChoose={onChoose} />
+    <DiscoverySection title="Trending" subtitle={discovery.meta?.cohort === 'global' ? 'Popular in the last 24 hours' : `Popular in ${discovery.meta?.cohort?.replace('region:', '')}`} items={discovery.trending} onChoose={onChoose} />
+  </div>
+}
+
 export default function SearchPage() {
   const { user } = useAuth()
   const requireAuth = useRequireAuth()
@@ -40,19 +63,32 @@ export default function SearchPage() {
   const [notice, setNotice] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
+  const [showDiscovery, setShowDiscovery] = useState(true)
   const [activeTrackId, setActiveTrackId] = useState(null)
+  const [discovery, setDiscovery] = useState(null)
   const requestId = useRef(0)
   const debounceTimer = useRef(null)
+  const suppressDebounce = useRef(false)
 
-  const runSearch = useCallback(async ({ query: nextQuery, mood: nextMood = '', genre: nextGenre = '' }) => {
+  const refreshDiscovery = useCallback(async () => {
+    if (typeof moodTuneApi.searchDiscovery !== 'function') return
+    try {
+      setDiscovery(await moodTuneApi.searchDiscovery({ limit: 8 }))
+    } catch {
+      // Search remains usable if discovery storage is temporarily unavailable.
+    }
+  }, [])
+
+  const runSearch = useCallback(async ({ query: nextQuery, mood: nextMood = '', genre: nextGenre = '' }, { record = false } = {}) => {
     const currentRequest = ++requestId.current
     setError('')
     setNotice('')
     setIsLoading(true)
     setActiveTrackId(null)
     try {
-      const response = await moodTuneApi.search({ q: nextQuery, mood: nextMood || undefined, genre: nextGenre || undefined, limit: 20 })
+      const response = await moodTuneApi.search({ q: nextQuery, mood: nextMood || undefined, genre: nextGenre || undefined, limit: 20, record: record || undefined })
       if (currentRequest === requestId.current) setResults(response.results)
+      if (record) await refreshDiscovery()
     } catch (requestError) {
       if (currentRequest === requestId.current) setError(requestError.message)
     } finally {
@@ -61,7 +97,9 @@ export default function SearchPage() {
         setHasSearched(true)
       }
     }
-  }, [])
+  }, [refreshDiscovery])
+
+  useEffect(() => { refreshDiscovery() }, [refreshDiscovery, user])
 
   useEffect(() => {
     if (!user) return
@@ -74,6 +112,10 @@ export default function SearchPage() {
 
   useEffect(() => {
     clearTimeout(debounceTimer.current)
+    if (suppressDebounce.current) {
+      suppressDebounce.current = false
+      return undefined
+    }
     if (!user || query.trim().length < 2) {
       if (query.trim().length < 2) {
         requestId.current += 1
@@ -97,8 +139,39 @@ export default function SearchPage() {
       requireAuth('/search')
       return
     }
+    setShowDiscovery(false)
     clearTimeout(debounceTimer.current)
-    runSearch(draft)
+    runSearch(draft, { record: true })
+  }
+
+  const chooseSuggestion = (suggestion) => {
+    suppressDebounce.current = true
+    setQuery(suggestion)
+    setHasSearched(false)
+    if (!user) return
+    setShowDiscovery(false)
+    clearTimeout(debounceTimer.current)
+    runSearch({ query: suggestion, mood, genre: genre.trim() }, { record: true })
+  }
+
+  const deleteRecent = async (searchId) => {
+    if (!user) return
+    try {
+      await moodTuneApi.deleteRecentSearch(searchId)
+      setDiscovery((current) => current ? { ...current, recent: current.recent.filter((item) => item.id !== searchId) } : current)
+    } catch (requestError) {
+      setError(requestError.message)
+    }
+  }
+
+  const clearRecent = async () => {
+    if (!user) return
+    try {
+      await moodTuneApi.clearRecentSearches()
+      setDiscovery((current) => current ? { ...current, recent: [] } : current)
+    } catch (requestError) {
+      setError(requestError.message)
+    }
   }
 
   const saveFavorite = async (trackId) => {
@@ -112,7 +185,8 @@ export default function SearchPage() {
   const toggleSpotifyPlayer = (trackId) => setActiveTrackId((currentTrackId) => currentTrackId === trackId ? null : trackId)
 
   return <section className="content-page"><div className="page-header"><p className="page-eyebrow">Explore the catalogue</p><h1 className="page-title">Find your next favorite</h1><p className="page-copy">Search by song, artist, mood, or genre and discover something that fits.</p></div>
-    <form onSubmit={search} className="filter-panel grid gap-3 sm:grid-cols-6"><label className="sm:col-span-3"><span className="sr-only">Search songs or artists</span><input value={query} onChange={(event) => { setQuery(event.target.value); setHasSearched(false) }} placeholder="Search songs or artists" className="input-control mt-0" /></label><MoodFilter value={mood} onChange={(nextMood) => { setMood(nextMood); setHasSearched(false) }} /><button className="button-primary sm:row-span-2">Search</button><label className="sm:col-span-5"><span className="sr-only">Genre filter</span><input value={genre} onChange={(event) => { setGenre(event.target.value); setHasSearched(false) }} placeholder="Optional genre filter" className="input-control mt-0" /></label></form>
+    <form onSubmit={search} className="filter-panel grid gap-3 sm:grid-cols-6"><label className="sm:col-span-3"><span className="sr-only">Search songs or artists</span><input value={query} onChange={(event) => { setQuery(event.target.value); setHasSearched(false); setShowDiscovery(true) }} placeholder="Search songs or artists" className="input-control mt-0" /></label><MoodFilter value={mood} onChange={(nextMood) => { setMood(nextMood); setHasSearched(false) }} /><button className="button-primary sm:row-span-2">Search</button><label className="sm:col-span-5"><span className="sr-only">Genre filter</span><input value={genre} onChange={(event) => { setGenre(event.target.value); setHasSearched(false) }} placeholder="Optional genre filter" className="input-control mt-0" /></label></form>
+    {showDiscovery && <SearchDiscovery discovery={discovery} onChoose={chooseSuggestion} onDelete={deleteRecent} onClear={clearRecent} />}
     <ErrorMessage message={error} />{notice && <p className="notice-success">{notice}</p>}{isLoading && <LoadingState label="Searching the catalogue…" />}{!isLoading && results.length > 0 && <div className="space-y-3">{results.map((song) => <SongCard key={song.track_id} song={song} onFavorite={user ? saveFavorite : undefined} isSpotifyPlayerActive={typeof song.track_id === 'string' && activeTrackId === song.track_id.trim()} onToggleSpotifyPlayer={toggleSpotifyPlayer} />)}</div>}{!isLoading && hasSearched && query && results.length === 0 && !error && user && <p className="empty-state">No matching songs found. Try a broader search.</p>}
   </section>
 }

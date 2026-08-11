@@ -20,6 +20,7 @@ from backend.repositories.firestore import FirestoreUserRepository
 from backend.repositories.unavailable import FirebaseUnavailableRepository
 from backend.services.catalogue_service import CatalogueService
 from backend.services.recommendation_service import RecommendationService
+from backend.services.search_discovery_service import SearchDiscoveryService
 from backend.utils import bounded_limit, json_body, success
 from ml.config.recommendation_config import ACTIVITIES, PREFERRED_GENRES
 
@@ -155,6 +156,7 @@ def create_app(settings: Settings | None = None, repository=None, token_verifier
     app.extensions["firebase_error"] = firebase_error
     catalogue = CatalogueService()
     recommendation_service = RecommendationService(repository)
+    search_discovery_service = SearchDiscoveryService(repository)
 
     @app.errorhandler(ValueError)
     def handle_validation_error(error):
@@ -210,7 +212,33 @@ def create_app(settings: Settings | None = None, repository=None, token_verifier
             query, request.args.get("mood"), request.args.get("genre"), minimum_value,
             bounded_limit(request.args.get("limit")),
         )
+        if request.args.get("record", "false").lower() == "true":
+            user_id = optional_user_id()
+            region = request.headers.get("X-MoodTune-Region", "").strip().lower()[:32] or None
+            repository.record_search(user_id, query, region)
         return success({"query": query, "results": records})
+
+    @app.get("/api/search/discovery")
+    def search_discovery():
+        user_id = optional_user_id()
+        region = request.args.get("region", "").strip().lower()[:32] or None
+        return success(search_discovery_service.discovery(
+            user_id, region, bounded_limit(request.args.get("limit"), default=8, maximum=10),
+        ))
+
+    @app.delete("/api/search/recent/<search_id>")
+    @require_auth
+    def delete_recent_search(search_id: str):
+        if not re.fullmatch(r"[a-f0-9]{20}", search_id):
+            raise ValueError("Invalid recent search id.")
+        if not repository.delete_recent_search(g.user_id, search_id):
+            return {"error": {"message": "Recent search was not found.", "status": 404}}, 404
+        return success({"message": "Recent search deleted."})
+
+    @app.delete("/api/search/recent")
+    @require_auth
+    def clear_recent_searches():
+        return success({"deleted": repository.clear_recent_searches(g.user_id)})
 
     @app.get("/api/profile")
     @require_auth

@@ -24,7 +24,7 @@ AUTH = {"Authorization": "Bearer valid-token"}
 
 def test_health_and_public_recommendation(client) -> None:
     assert client.get("/api/health").get_json()["status"] == "ok"
-    response = client.post("/api/recommend", json={"mood": "sad", "mode": "feel_better", "activity": "studying", "preferred_genres": ["jazz", "classical"], "limit": 3})
+    response = client.post("/api/recommend", json={"mood": "sad", "mode": "feel_better", "activity": "studying", "preferred_genres": ["jazz", "classical", "reggae"], "limit": 3})
     body = response.get_json()
     assert response.status_code == 200
     assert body["target_mood"] == "happy"
@@ -43,6 +43,28 @@ def test_recommendation_validation_and_search(client) -> None:
     response = client.get("/api/search?q=love&limit=3")
     assert response.status_code == 200
     assert len(response.get_json()["results"]) <= 3
+
+
+def test_search_discovery_deduplicates_deletes_and_ranks_queries(client) -> None:
+    for query in ["jazz", "pop", "jazz"]:
+        response = client.get(f"/api/search?q={query}&record=true", headers={**AUTH, "X-MoodTune-Region": "mm"})
+        assert response.status_code == 200
+
+    discovery = client.get("/api/search/discovery?region=mm&limit=5", headers=AUTH)
+    assert discovery.status_code == 200
+    body = discovery.get_json()
+    assert [item["query"] for item in body["recent"]] == ["jazz", "pop"]
+    assert body["trending"][0]["query"] == "jazz"
+    assert body["trending"][0]["count"] == 2
+    assert body["meta"]["cohort"] == "region:mm"
+    assert body["recommended"]
+
+    recent_id = body["recent"][0]["id"]
+    assert client.delete(f"/api/search/recent/{recent_id}", headers=AUTH).status_code == 200
+    assert len(client.get("/api/search/discovery", headers=AUTH).get_json()["recent"]) == 1
+    cleared = client.delete("/api/search/recent", headers=AUTH)
+    assert cleared.get_json()["deleted"] == 1
+    assert client.delete(f"/api/search/recent/{recent_id}", headers=AUTH).status_code == 404
 
 
 def test_auth_profile_favorites_and_history(client) -> None:

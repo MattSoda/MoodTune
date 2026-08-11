@@ -8,6 +8,14 @@ vi.mock('../context/AuthContext', () => ({ useAuth: () => authState }))
 vi.mock('../services/moodTuneApi', () => ({
   moodTuneApi: {
     search: vi.fn().mockResolvedValue({ results: [{ track_id: TRACK_ID, track_name: 'Search Result', artists: 'MoodTune Artist', genres: 'pop', predicted_mood: 'happy', popularity: 80 }] }),
+    searchDiscovery: vi.fn().mockResolvedValue({
+      recent: [{ id: '0123456789abcdef0123', query: 'late night jazz' }],
+      recommended: [{ query: 'acoustic', reason: 'From your preferred genres' }],
+      trending: [{ query: 'dance', count: 4 }],
+      meta: { cohort: 'global', cold_start: false },
+    }),
+    deleteRecentSearch: vi.fn().mockResolvedValue({}),
+    clearRecentSearches: vi.fn().mockResolvedValue({ deleted: 1 }),
     addFavorite: vi.fn().mockResolvedValue({}),
   },
 }))
@@ -41,7 +49,22 @@ test('shows related results automatically while typing', async () => {
   render(<MemoryRouter><SearchPage /></MemoryRouter>)
   await user.type(screen.getByPlaceholderText('Search songs or artists'), 'Search Result')
   expect(await screen.findByText('Search Result')).toBeInTheDocument()
+  expect(screen.getByRole('region', { name: 'Recommended for you' })).toBeInTheDocument()
+  expect(screen.getByRole('region', { name: 'Trending' })).toBeInTheDocument()
   expect(moodTuneApi.search).toHaveBeenCalledWith(expect.objectContaining({ q: 'Search Result' }))
+})
+
+test('hides discovery after Enter and restores it when the query changes', async () => {
+  const user = userEvent.setup()
+  render(<MemoryRouter><SearchPage /></MemoryRouter>)
+  const input = screen.getByPlaceholderText('Search songs or artists')
+  await screen.findByRole('region', { name: 'Recommended for you' })
+
+  await user.type(input, 'Search Result{Enter}')
+  expect(screen.queryByRole('region', { name: 'Recommended for you' })).not.toBeInTheDocument()
+
+  await user.type(input, ' remix')
+  expect(screen.getByRole('region', { name: 'Recommended for you' })).toBeInTheDocument()
 })
 
 test('allows the search page but requires login before showing results', async () => {
@@ -54,4 +77,19 @@ test('allows the search page but requires login before showing results', async (
   expect(screen.getByText('/login?redirect=%2Fsearch')).toBeInTheDocument()
   expect(moodTuneApi.search).not.toHaveBeenCalled()
   expect(JSON.parse(sessionStorage.getItem('moodtune.pendingSearch'))).toMatchObject({ query: 'Search Result' })
+})
+
+test('surfaces discovery sections and explicitly deletes a recent query', async () => {
+  const user = userEvent.setup()
+  render(<MemoryRouter><SearchPage /></MemoryRouter>)
+  expect(await screen.findByRole('region', { name: 'Recent' })).toBeInTheDocument()
+  expect(screen.getByRole('region', { name: 'Recommended for you' })).toBeInTheDocument()
+  expect(screen.getByRole('region', { name: 'Trending' })).toBeInTheDocument()
+
+  await user.click(screen.getByRole('button', { name: 'Delete recent search late night jazz' }))
+  expect(moodTuneApi.deleteRecentSearch).toHaveBeenCalledWith('0123456789abcdef0123')
+  expect(screen.queryByText('late night jazz')).not.toBeInTheDocument()
+
+  await user.click(screen.getByRole('button', { name: 'acoustic' }))
+  expect(moodTuneApi.search).toHaveBeenCalledWith(expect.objectContaining({ q: 'acoustic', record: true }))
 })

@@ -15,6 +15,9 @@ async function request(call) {
 export const moodTuneApi = {
   recommend: (payload) => request(() => apiClient.post('/recommend', payload)),
   search: (parameters) => request(() => apiClient.get('/search', { params: parameters })),
+  searchDiscovery: (parameters = {}) => request(() => apiClient.get('/search/discovery', { params: parameters })),
+  deleteRecentSearch: (searchId) => request(() => apiClient.delete(`/search/recent/${encodeURIComponent(searchId)}`)),
+  clearRecentSearches: () => request(() => apiClient.delete('/search/recent')),
   profile: () => request(() => apiClient.get('/profile')),
   updateProfile: (payload) => request(() => apiClient.put('/profile', payload)),
   favorites: () => request(() => apiClient.get('/favorites')),
