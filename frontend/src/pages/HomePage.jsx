@@ -40,12 +40,12 @@ export default function HomePage() {
     ? current.filter((item) => item !== genre) : [...current, genre])
 
   return (
-    <section className="home-shell -my-8 py-5 sm:-my-12 sm:flex sm:h-[calc(100dvh-65px)] sm:min-h-0 sm:items-center sm:py-4">
+    <section className="home-shell -my-6 py-5 sm:-my-10 sm:py-8 lg:-my-12">
       <form onSubmit={submit} className="mood-stage mx-auto grid w-full lg:w-[76vw] lg:max-w-[86rem] lg:grid-cols-[0.86fr_1.14fr]">
-        <div className="mood-stage-left flex flex-col p-7 sm:p-8 lg:p-9">
+        <div className="mood-stage-left flex min-w-0 flex-col p-5 sm:p-8 lg:p-9">
           <div>
             <p className="text-[0.68rem] font-bold uppercase tracking-[0.28em] text-lavender-300">Tune into the moment</p>
-            <h1 className="mt-5 max-w-md text-5xl font-bold leading-[1.02] tracking-[-0.055em] text-white sm:text-6xl">
+            <h1 className="mt-4 max-w-md text-4xl font-bold leading-[1.02] tracking-[-0.055em] text-white sm:mt-5 sm:text-6xl">
               How are <span className="lavender-text">you feeling?</span>
             </h1>
           </div>
@@ -65,7 +65,7 @@ export default function HomePage() {
           <div className="stage-footer mt-auto hidden items-center gap-4 pt-10 text-xs text-zinc-600 lg:flex"><span className="h-px w-10 bg-lavender-300/50" />Lavender &amp; obsidian, tuned to you</div>
         </div>
 
-        <div className="mood-stage-right flex flex-col gap-3 border-t border-white/[0.08] p-5 lg:border-l lg:border-t-0 lg:pb-4 lg:pt-12">
+        <div className="mood-stage-right flex min-w-0 flex-col gap-4 border-t border-white/[0.08] p-4 sm:p-5 lg:border-l lg:border-t-0 lg:pb-5 lg:pt-9">
           <fieldset>
             <legend className="stage-heading">What are you doing?</legend>
             <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">

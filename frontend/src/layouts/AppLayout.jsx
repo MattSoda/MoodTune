@@ -22,7 +22,7 @@ function LogoutConfirmation({ isLoggingOut, onCancel, onConfirm }) {
       <div className="mb-5 grid h-11 w-11 place-items-center rounded-2xl border border-lavender-300/20 bg-lavender-300/[0.09] text-lavender-200"><svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M10 5H6.5A2.5 2.5 0 0 0 4 7.5v9A2.5 2.5 0 0 0 6.5 19H10M14.5 8.5 18 12l-3.5 3.5M9 12h9" strokeLinecap="round" strokeLinejoin="round" /></svg></div>
       <h2 id="logout-title" className="text-xl font-semibold tracking-[-0.025em] text-white">Log out of MoodTune?</h2>
       <p id="logout-description" className="mt-2 text-sm leading-6 text-zinc-400">You’ll need to log in again to access your recommendations, favorites, history, and profile.</p>
-      <div className="mt-6 flex justify-end gap-3"><button type="button" disabled={isLoggingOut} onClick={onCancel} className="button-secondary">Cancel</button><button type="button" autoFocus disabled={isLoggingOut} onClick={onConfirm} className="button-primary">{isLoggingOut ? 'Logging out…' : 'Log out'}</button></div>
+      <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" disabled={isLoggingOut} onClick={onCancel} className="button-secondary">Cancel</button><button type="button" autoFocus disabled={isLoggingOut} onClick={onConfirm} className="button-primary">{isLoggingOut ? 'Logging out…' : 'Log out'}</button></div>
     </div>
   </div>
 }
@@ -32,6 +32,7 @@ export default function AppLayout() {
   const navigate = useNavigate()
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const signOut = async () => {
     setIsLoggingOut(true)
     try {
@@ -45,7 +46,7 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen bg-[#050505] text-zinc-100">
       <header className="sticky top-0 z-10 border-b border-white/[0.06] bg-[#050505]/85 backdrop-blur-xl">
-        <nav aria-label="Main navigation" className="mx-auto flex max-w-[86rem] flex-wrap items-center gap-1 px-5 py-3.5">
+        <nav aria-label="Main navigation" className="relative mx-auto flex max-w-[86rem] flex-wrap items-center gap-1 px-4 py-3 sm:flex-nowrap sm:px-6">
           <NavLink to="/" className="logo-link mr-auto" aria-label="MoodTune home">
             <span className="logo-mark" aria-hidden="true">
               <svg viewBox="0 0 36 36" role="presentation">
@@ -66,6 +67,10 @@ export default function AppLayout() {
             </span>
             <span className="logo-wordmark">Mood<span>Tune</span></span>
           </NavLink>
+          <button type="button" className="button-secondary grid h-10 w-10 place-items-center p-0 sm:hidden" aria-label="Toggle navigation" aria-expanded={isMenuOpen} onClick={() => setIsMenuOpen((open) => !open)}>
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path d={isMenuOpen ? 'm6 6 12 12M18 6 6 18' : 'M4 7h16M4 12h16M4 17h16'} strokeLinecap="round" /></svg>
+          </button>
+          <div className={`${isMenuOpen ? 'flex' : 'hidden'} basis-full flex-col gap-1 border-t border-white/[0.06] pt-3 sm:flex sm:basis-auto sm:flex-row sm:items-center sm:border-0 sm:pt-0`} onClick={() => setIsMenuOpen(false)}>
           <NavLink to="/" end className={navClass}>Discover</NavLink>
           <NavLink to="/search" className={({ isActive }) => `${navClass({ isActive })} inline-flex items-center gap-2`}>
             <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -81,9 +86,10 @@ export default function AppLayout() {
             <NavLink to="/login" className={navClass}>Log in</NavLink>
             <NavLink to="/register" className="button-primary px-3 py-1.5 text-sm">Create account</NavLink>
           </>}
+          </div>
         </nav>
       </header>
-      <main className="mx-auto max-w-[86rem] px-5 py-8 sm:py-12"><Outlet /></main>
+      <main className="mx-auto min-w-0 max-w-[86rem] px-4 py-6 sm:px-6 sm:py-10 lg:py-12"><Outlet /></main>
       {showLogoutConfirmation && <LogoutConfirmation isLoggingOut={isLoggingOut} onCancel={() => setShowLogoutConfirmation(false)} onConfirm={signOut} />}
     </div>
   )

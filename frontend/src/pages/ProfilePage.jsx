@@ -79,9 +79,9 @@ export default function ProfilePage() {
         <ErrorMessage message={error} />
         {notice && <p className="notice-success">{notice}</p>}
 
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex min-w-0 flex-wrap items-center gap-4">
           {displayedAvatar ? <img src={displayedAvatar} alt="Profile avatar" className="h-20 w-20 rounded-2xl border border-lavender-300/40 object-cover shadow-[0_0_24px_rgba(167,139,250,.15)]" /> : <div aria-hidden="true" className="flex h-20 w-20 items-center justify-center rounded-2xl border border-lavender-300/20 bg-lavender-300/[0.1] text-2xl font-bold text-lavender-200">{displayName.trim().slice(0, 1).toUpperCase() || '?'}</div>}
-          <label className="text-sm font-medium text-zinc-200">Profile image <span className="font-normal text-zinc-500">(optional, 5 MB max)</span><input type="file" accept="image/*" onChange={(event) => setImageFile(event.target.files?.[0] || null)} className="mt-2 block w-full text-sm text-zinc-400 file:mr-3 file:rounded-lg file:border-0 file:bg-lavender-300/[0.12] file:px-3 file:py-2 file:text-lavender-100" /></label>
+          <label className="min-w-0 flex-1 basis-52 text-sm font-medium text-zinc-200">Profile image <span className="font-normal text-zinc-500">(optional, 5 MB max)</span><input type="file" accept="image/*" onChange={(event) => setImageFile(event.target.files?.[0] || null)} className="mt-2 block w-full max-w-full text-sm text-zinc-400 file:mr-2 file:rounded-lg file:border-0 file:bg-lavender-300/[0.12] file:px-3 file:py-2 file:text-lavender-100 sm:file:mr-3" /></label>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">

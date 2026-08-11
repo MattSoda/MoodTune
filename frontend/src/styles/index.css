@@ -7,28 +7,29 @@
 @layer base {
   :root { font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif; color: #fafafa; background: #050505; }
   * { box-sizing: border-box; }
-  html { background: #050505; }
-  body { margin: 0; min-width: 320px; min-height: 100vh; background: #050505; }
-  button, input, select { font: inherit; }
+  html { max-width: 100%; overflow-x: hidden; background: #050505; }
+  body { margin: 0; min-width: 320px; min-height: 100vh; max-width: 100%; overflow-x: hidden; background: #050505; }
+  img, svg, video, iframe { max-width: 100%; }
+  button, input, select, textarea { min-width: 0; font: inherit; }
   button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, label:has(input:focus-visible) { outline: 2px solid #c4b5fd; outline-offset: 3px; }
   ::selection { background: #a78bfa; color: #0b0710; }
 }
 
 @layer components {
-  .surface { @apply rounded-2xl border border-white/[0.09] bg-[#0c0c0f]/95 shadow-[0_18px_55px_rgba(0,0,0,.3)]; }
-  .content-page { @apply space-y-7; }
+  .surface { @apply rounded-xl border border-white/[0.09] bg-[#0c0c0f]/95 shadow-[0_18px_55px_rgba(0,0,0,.3)] sm:rounded-2xl; }
+  .content-page { @apply min-w-0 space-y-5 sm:space-y-7; }
   .page-header { @apply max-w-3xl; }
   .page-eyebrow { @apply mb-2 text-xs font-bold uppercase tracking-[0.22em] text-lavender-300; }
-  .page-title { @apply text-3xl font-bold tracking-[-0.04em] text-white sm:text-4xl; }
-  .page-copy { @apply mt-2 max-w-2xl text-base leading-7 text-zinc-400; }
+  .page-title { @apply break-words text-2xl font-bold tracking-[-0.04em] text-white sm:text-4xl; }
+  .page-copy { @apply mt-2 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base sm:leading-7; }
   .input-control { @apply mt-1 w-full rounded-xl border border-white/[0.1] bg-black/30 px-4 py-3 text-sm text-zinc-100 transition placeholder:text-zinc-600 hover:border-zinc-600 focus:border-lavender-300/70; }
   .button-primary { @apply rounded-xl bg-lavender-300 px-4 py-2.5 font-semibold text-[#100d14] shadow-[0_0_20px_rgba(167,139,250,.16)] transition hover:-translate-y-0.5 hover:bg-lavender-200 disabled:cursor-not-allowed disabled:opacity-60; }
   .button-secondary { @apply rounded-xl border border-white/[0.1] bg-white/[0.025] px-4 py-2.5 font-medium text-zinc-200 transition hover:border-lavender-300/60 hover:bg-lavender-300/[0.07] hover:text-lavender-100; }
-  .badge { @apply rounded-full border border-white/[0.07] bg-white/[0.045] px-2.5 py-1 text-xs font-medium text-zinc-300; }
+  .badge { @apply max-w-full break-words rounded-full border border-white/[0.07] bg-white/[0.045] px-2.5 py-1 text-xs font-medium text-zinc-300; }
   .filter-panel { @apply rounded-2xl border border-white/[0.09] bg-[#0c0c0f]/95 p-4 shadow-[0_18px_55px_rgba(0,0,0,.28)] sm:p-5; }
   .empty-state { @apply rounded-2xl border border-dashed border-white/[0.11] bg-white/[0.02] px-6 py-10 text-center text-zinc-400; }
   .notice-success { @apply rounded-xl border border-emerald-300/20 bg-emerald-300/[0.06] px-4 py-3 text-sm text-emerald-200; }
-  .song-artwork { width: 0; min-width: 0; height: 3.75rem; opacity: 0; transform: translateX(-.75rem) scale(.88); @apply relative grid shrink-0 place-items-center overflow-hidden rounded-xl border border-white/[0.1] bg-gradient-to-br from-lavender-300/25 via-violet-500/15 to-zinc-950 shadow-[0_10px_28px_rgba(0,0,0,.35)] transition-all duration-300; }
+  .song-artwork { width: 3.25rem; min-width: 3.25rem; height: 3.25rem; opacity: 1; transform: none; @apply relative grid shrink-0 place-items-center overflow-hidden rounded-xl border border-white/[0.1] bg-gradient-to-br from-lavender-300/25 via-violet-500/15 to-zinc-950 shadow-[0_10px_28px_rgba(0,0,0,.35)] transition-all duration-300; }
   .group:hover .song-artwork, .group:focus-within .song-artwork, .song-artwork-playing { width: 3.75rem; min-width: 3.75rem; opacity: 1; transform: translateX(0) scale(1); }
   .song-artwork img { @apply h-full w-full object-cover; }
   .song-artwork-fallback { @apply grid h-full w-full place-items-center text-2xl font-bold text-lavender-200; background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.14), transparent 18%), repeating-radial-gradient(circle, rgba(196,181,253,.16) 0 2px, transparent 3px 7px), #17121f; }
@@ -68,9 +69,9 @@
   .mode-card-selected { @apply -translate-y-1 border-lavender-300/60 bg-gradient-to-br from-lavender-300/[0.12] to-lavender-300/[0.03] shadow-[0_16px_45px_rgba(0,0,0,0.3),0_0_28px_rgba(167,139,250,0.09)]; }
   .mode-icon { @apply mb-2 grid h-8 w-8 place-items-center rounded-lg border border-zinc-800 bg-zinc-900 text-base text-zinc-500; }
   .mode-icon-selected { @apply border-lavender-300/30 bg-lavender-300/[0.12] text-lavender-200; }
-  .recommend-button { @apply inline-flex min-h-12 items-center justify-center gap-8 rounded-full bg-lavender-300 px-8 py-3 text-sm font-bold text-[#100d14] shadow-[0_0_35px_rgba(167,139,250,0.28)] transition duration-200 hover:-translate-y-0.5 hover:bg-lavender-200 hover:shadow-[0_0_45px_rgba(196,181,253,0.38)] active:translate-y-0; }
+  .recommend-button { @apply inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-lavender-300 px-5 py-3 text-sm font-bold text-[#100d14] shadow-[0_0_35px_rgba(167,139,250,0.28)] transition duration-200 hover:-translate-y-0.5 hover:bg-lavender-200 hover:shadow-[0_0_45px_rgba(196,181,253,0.38)] active:translate-y-0 sm:gap-8 sm:px-8; }
 
-  .mood-stage { @apply relative overflow-hidden rounded-[2rem] border border-white/[0.14] bg-[#08080a] shadow-[0_38px_100px_rgba(0,0,0,.72),0_0_0_1px_rgba(196,181,253,.025),0_0_55px_rgba(139,92,246,.05)]; }
+  .mood-stage { @apply relative overflow-hidden rounded-2xl border border-white/[0.14] bg-[#08080a] shadow-[0_38px_100px_rgba(0,0,0,.72),0_0_0_1px_rgba(196,181,253,.025),0_0_55px_rgba(139,92,246,.05)] sm:rounded-[2rem]; }
   .mood-stage::before { content: ''; position: absolute; inset: 0 14% auto; height: 1px; background: linear-gradient(90deg, transparent, rgba(196,181,253,.52), transparent); }
   .mood-stage-left { background: radial-gradient(circle at 44% 4%, rgba(167,139,250,.105), transparent 38%), linear-gradient(145deg, #0c0b10, #09090c 58%); }
   .mood-stage-right { background: linear-gradient(145deg, rgba(255,255,255,.018), transparent 45%), #08080a; }
@@ -88,15 +89,11 @@
   .stage-mode-selected { @apply border-lavender-300/80 bg-gradient-to-br from-lavender-300/[0.13] to-lavender-300/[0.04] shadow-[0_0_24px_rgba(167,139,250,.18),inset_0_0_18px_rgba(167,139,250,.04)]; }
   .stage-radio { @apply mt-1 h-4 w-4 shrink-0 rounded-full border border-zinc-600; }
   .stage-radio-selected { @apply border-[5px] border-lavender-300 bg-white shadow-[0_0_9px_rgba(196,181,253,.75)]; }
-  .stage-cta { @apply flex min-h-11 items-center justify-center gap-7 rounded-xl bg-gradient-to-r from-violet-500 via-lavender-400 to-violet-500 px-7 py-2 text-sm font-bold text-[#100d14] shadow-[0_0_30px_rgba(167,139,250,.28)] transition duration-200 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0; }
+  .stage-cta { @apply flex min-h-11 items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-violet-500 via-lavender-400 to-violet-500 px-4 py-2 text-sm font-bold text-[#100d14] shadow-[0_0_30px_rgba(167,139,250,.28)] transition duration-200 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 sm:gap-7 sm:px-7; }
 }
 
-@media (min-width: 1024px) {
-  .mood-stage { height: min(72dvh, 46rem); }
-}
-
-@media (min-width: 1024px) and (max-height: 800px) {
-  .stage-footer { display: none; }
+@media (min-width: 640px) {
+  .song-artwork { width: 0; min-width: 0; height: 3.75rem; opacity: 0; transform: translateX(-.75rem) scale(.88); }
 }
 
 @keyframes logo-pulse {
