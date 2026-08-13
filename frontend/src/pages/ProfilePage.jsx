@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import ErrorMessage from '../components/ErrorMessage'
 import LoadingState from '../components/LoadingState'
+import MoodFrequencyChart from '../components/MoodFrequencyChart'
 import { useAuth } from '../context/AuthContext'
 import { uploadProfileImage } from '../services/profileImageService'
 import { moodTuneApi } from '../services/moodTuneApi'
@@ -23,6 +24,10 @@ export default function ProfilePage() {
   const [notice, setNotice] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [moodFrequency, setMoodFrequency] = useState([])
+  const [totalCheckIns, setTotalCheckIns] = useState(0)
+  const [insightsError, setInsightsError] = useState('')
+  const [areInsightsLoading, setAreInsightsLoading] = useState(true)
 
   useEffect(() => {
     moodTuneApi.profile()
@@ -38,6 +43,16 @@ export default function ProfilePage() {
       })
       .catch((requestError) => setError(requestError.message))
       .finally(() => setIsLoading(false))
+  }, [])
+
+  useEffect(() => {
+    moodTuneApi.moodFrequency()
+      .then((response) => {
+        setMoodFrequency(response.mood_frequency || [])
+        setTotalCheckIns(response.total_check_ins || 0)
+      })
+      .catch((requestError) => setInsightsError(requestError.message))
+      .finally(() => setAreInsightsLoading(false))
   }, [])
 
   const save = async (event) => {
@@ -96,6 +111,19 @@ export default function ProfilePage() {
         </div>
         <button disabled={isSaving} className="button-primary px-5 py-3 disabled:opacity-60">{isSaving ? 'Saving…' : 'Save profile'}</button>
       </form>
+      <section aria-labelledby="mood-frequency-title" className="surface relative overflow-hidden p-5 sm:p-8">
+        <span className="absolute inset-x-16 top-0 h-px bg-gradient-to-r from-transparent via-lavender-300/50 to-transparent" />
+        <h2 id="mood-frequency-title" className="text-xl font-bold tracking-[-0.03em] text-white sm:text-2xl">Your Mood Check-ins</h2>
+        <p className="mt-2 text-sm leading-6 text-zinc-400">Based on the moods you selected when requesting recommendations.</p>
+        {areInsightsLoading ? (
+          <div className="mt-5"><LoadingState label="Loading mood check-ins…" /></div>
+        ) : insightsError ? (
+          <div className="mt-5"><ErrorMessage message={`We couldn't load your mood insights. ${insightsError}`} /></div>
+        ) : (
+          <MoodFrequencyChart moodFrequency={moodFrequency} totalCheckIns={totalCheckIns} />
+        )}
+        <p className="mt-5 border-t border-white/[0.08] pt-4 text-xs leading-5 text-zinc-500">These insights summarize the moods you selected in MoodTune. They do not measure or diagnose your emotional health.</p>
+      </section>
     </section>
   )
 }

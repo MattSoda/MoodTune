@@ -17,7 +17,7 @@ class FirebaseUnavailableRepository:
     def add_favorite(self, user_id: str, track: dict[str, object]): self._raise()
     def remove_favorite(self, user_id: str, track_id: str): self._raise()
     def record_history(self, user_id: str, record: dict[str, object]): self._raise()
-    def list_history(self, user_id: str, limit: int): self._raise()
+    def list_history(self, user_id: str, limit: int | None = None): self._raise()
     def record_search(self, user_id: str | None, query: str, region: str | None): self._raise()
     def list_recent_searches(self, user_id: str, limit: int): self._raise()
     def delete_recent_search(self, user_id: str, search_id: str): self._raise()

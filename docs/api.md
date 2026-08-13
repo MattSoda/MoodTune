@@ -12,6 +12,23 @@ Base URL: `http://localhost:5000/api`
 | GET / POST | `/favorites` | Firebase token | List or add favorites |
 | DELETE | `/favorites/<track_id>` | Firebase token | Delete a favorite |
 | GET | `/history` | Firebase token | Retrieve recommendation history |
+| GET | `/insights/mood-frequency` | Firebase token | Count current moods across the user's complete recommendation history |
+
+## Mood-frequency response
+
+The authenticated Firebase identity selects the history to aggregate; user IDs
+sent in query parameters or request bodies are not used. Results are sorted by
+count descending.
+
+```json
+{
+  "mood_frequency": [
+    { "mood": "stressed", "count": 8 },
+    { "mood": "happy", "count": 5 }
+  ],
+  "total_check_ins": 13
+}
+```
 
 ## Recommendation request
 

@@ -68,8 +68,10 @@ class FirestoreUserRepository:
     def record_history(self, user_id: str, record: dict[str, object]) -> None:
         self._user(user_id).collection("history").add({**record, "created_at": datetime.now(timezone.utc)})
 
-    def list_history(self, user_id: str, limit: int) -> list[dict[str, object]]:
-        query = self._user(user_id).collection("history").order_by("created_at", direction="DESCENDING").limit(limit)
+    def list_history(self, user_id: str, limit: int | None = None) -> list[dict[str, object]]:
+        query = self._user(user_id).collection("history").order_by("created_at", direction="DESCENDING")
+        if limit is not None:
+            query = query.limit(limit)
         return [snapshot.to_dict() for snapshot in query.stream()]
 
     def record_search(self, user_id: str | None, query: str, region: str | None) -> None:

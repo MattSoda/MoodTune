@@ -20,6 +20,7 @@ export const moodTuneApi = {
   clearRecentSearches: () => request(() => apiClient.delete('/search/recent')),
   profile: () => request(() => apiClient.get('/profile')),
   updateProfile: (payload) => request(() => apiClient.put('/profile', payload)),
+  moodFrequency: () => request(() => apiClient.get('/insights/mood-frequency')),
   favorites: () => request(() => apiClient.get('/favorites')),
   addFavorite: (trackId) => request(() => apiClient.post('/favorites', { track_id: trackId })),
   removeFavorite: (trackId) => request(() => apiClient.delete(`/favorites/${encodeURIComponent(trackId)}`)),
