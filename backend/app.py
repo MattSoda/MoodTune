@@ -6,6 +6,13 @@ from pathlib import Path
 import re
 import sys
 
+from dotenv import load_dotenv
+
+# Load project-local settings before the module-level Flask app is created.
+# Flask's development runner otherwise loads .env too late when this file is
+# launched directly with `python backend/app.py`.
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+
 # Support both `python -m flask` from the project root and `python app.py`
 # when the current directory is `backend`.
 if __package__ in {None, ""}:

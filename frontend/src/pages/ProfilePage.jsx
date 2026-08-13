@@ -20,6 +20,7 @@ export default function ProfilePage() {
   const [bio, setBio] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [imageFile, setImageFile] = useState(null)
+  const [imagePreviewUrl, setImagePreviewUrl] = useState('')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -55,6 +56,16 @@ export default function ProfilePage() {
       .finally(() => setAreInsightsLoading(false))
   }, [])
 
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreviewUrl('')
+      return undefined
+    }
+    const previewUrl = URL.createObjectURL(imageFile)
+    setImagePreviewUrl(previewUrl)
+    return () => URL.revokeObjectURL(previewUrl)
+  }, [imageFile])
+
   const save = async (event) => {
     event.preventDefault()
     setError('')
@@ -80,50 +91,162 @@ export default function ProfilePage() {
     }
   }
 
-  if (isLoading) return <LoadingState label="Loading profile…" />
-  const displayedAvatar = avatarUrl || user?.photoURL
+  if (isLoading) return <LoadingState label="Loading profile..." />
+
+  const displayedAvatar = imagePreviewUrl || avatarUrl || user?.photoURL
+  const initials = (displayName || username || accountEmail || '?')
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+  const genreCount = commaSeparatedValues(genres).length
+  const artistCount = commaSeparatedValues(artists).length
+
   return (
-    <section className="content-page mx-auto max-w-3xl">
-      <div className="page-header">
-        <p className="page-eyebrow">Your listening identity</p>
-        <h1 className="page-title">Profile and preferences</h1>
-        <p className="page-copy mt-2">Your mood remains the strongest recommendation signal. These preferences help refine the results.</p>
+    <section className="profile-page mx-auto max-w-6xl space-y-5 sm:space-y-7">
+      <header className="profile-hero relative isolate overflow-hidden rounded-[1.75rem] border border-white/[0.09] px-5 py-7 shadow-[0_28px_90px_rgba(0,0,0,.5)] sm:px-8 sm:py-9 lg:px-10">
+        <div className="relative grid items-center gap-7 md:grid-cols-[auto_minmax(0,1fr)] lg:grid-cols-[auto_minmax(0,1fr)_auto]">
+          <div className="profile-avatar-orbit mx-auto md:mx-0">
+            <div className="relative h-28 w-28 overflow-hidden rounded-full border border-lavender-200/30 bg-[#17131d] p-1 shadow-[0_0_45px_rgba(167,139,250,.18)] sm:h-32 sm:w-32">
+              {displayedAvatar ? (
+                <img src={displayedAvatar} alt="Profile avatar" className="h-full w-full rounded-full object-cover" />
+              ) : (
+                <div aria-hidden="true" className="grid h-full w-full place-items-center rounded-full bg-[radial-gradient(circle_at_35%_25%,rgba(255,255,255,.16),transparent_20%),linear-gradient(145deg,#2c2140,#100d16)] text-3xl font-bold tracking-[-0.06em] text-lavender-100">{initials}</div>
+              )}
+              <span className="absolute bottom-1.5 right-1.5 h-4 w-4 rounded-full border-[3px] border-[#0d0b11] bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,.65)]" title="Active listener" />
+            </div>
+          </div>
+
+          <div className="min-w-0 text-center md:text-left">
+            <h1 className="break-words text-3xl font-bold tracking-[-0.055em] text-white sm:text-5xl">{displayName || 'Make it yours'}</h1>
+            <p className="mt-2 text-sm text-zinc-500">{username ? `@${username}` : accountEmail}</p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2 md:justify-start">
+              {commaSeparatedValues(genres).slice(0, 4).map((genre) => <span key={genre} className="rounded-full border border-lavender-300/15 bg-lavender-300/[0.07] px-3 py-1.5 text-xs capitalize text-lavender-100">{genre}</span>)}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 lg:w-72">
+            {[
+              ['Check-ins', `${totalCheckIns}×`],
+              ['Genres', `${genreCount} picks`],
+              ['Artists', `${artistCount} picks`],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-2xl border border-white/[0.08] bg-black/25 px-2 py-4 text-center backdrop-blur-sm">
+                <p className="text-xl font-bold tracking-tight text-white sm:text-2xl">{value}</p>
+                <p className="mt-1 text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-zinc-500">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(20rem,.8fr)] lg:items-start">
+        <form onSubmit={save} className="surface relative min-w-0 overflow-hidden">
+          <div className="border-b border-white/[0.07] px-5 py-5 sm:flex sm:items-center sm:justify-between sm:px-7">
+            <div>
+              <p className="text-[0.68rem] font-bold uppercase tracking-[0.2em] text-lavender-300">Profile editor</p>
+              <h2 className="mt-1 text-xl font-semibold tracking-[-0.035em] text-white">Tune your identity</h2>
+            </div>
+            <p className="mt-2 text-xs text-zinc-600 sm:mt-0">Changes sync across MoodTune</p>
+          </div>
+
+          <div className="space-y-7 p-5 sm:p-7">
+            <ErrorMessage message={error} />
+            {notice && <p className="notice-success">{notice}</p>}
+
+            <div className="flex min-w-0 flex-col gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4 sm:flex-row sm:items-center">
+              <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl border border-white/10 bg-lavender-300/[0.08] text-sm font-bold text-lavender-100">
+                {displayedAvatar ? <img src={displayedAvatar} alt="" className="h-full w-full object-cover" /> : initials}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-zinc-100">Profile artwork</p>
+                <p className="mt-1 truncate text-xs text-zinc-500">{imageFile?.name || 'JPG, PNG or WebP up to 5 MB'}</p>
+              </div>
+              <input id="profile-image" type="file" accept="image/*" onChange={(event) => setImageFile(event.target.files?.[0] || null)} className="sr-only" />
+              <label htmlFor="profile-image" className="button-secondary cursor-pointer text-center text-sm">Choose image</label>
+            </div>
+
+            <div>
+              <SectionHeading number="01" title="Account details" />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <InfoCard icon="@" label="Username" value={username || 'Not set'} />
+                <InfoCard icon="✦" label="Account email" value={accountEmail} />
+              </div>
+            </div>
+
+            <div>
+              <SectionHeading number="02" title="Public presence" />
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-zinc-300">Name<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength="80" className="profile-control" /></label>
+                <label className="block text-sm font-medium text-zinc-300">About me <span className="float-right font-normal text-zinc-600">{bio.length}/500</span><textarea value={bio} onChange={(event) => setBio(event.target.value)} maxLength="500" rows="4" placeholder="The records, rituals and sounds that define you..." className="profile-control resize-y" /></label>
+              </div>
+            </div>
+
+            <div>
+              <SectionHeading number="03" title="Taste signals" />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block text-sm font-medium text-zinc-300">Preferred genres<span className="mt-1 block text-xs font-normal text-zinc-600">Comma-separated, up to 20</span><input value={genres} onChange={(event) => setGenres(event.target.value)} placeholder="pop, jazz, indie" className="profile-control" /></label>
+                <label className="block text-sm font-medium text-zinc-300">Favorite artists<span className="mt-1 block text-xs font-normal text-zinc-600">Comma-separated, up to 20</span><input value={artists} onChange={(event) => setArtists(event.target.value)} placeholder="Adele, Coldplay, The Weeknd" className="profile-control" /></label>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-white/[0.07] bg-black/20 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+            <p className="text-xs leading-5 text-zinc-600">Your mood remains the strongest recommendation signal.</p>
+            <button disabled={isSaving} className="button-primary inline-flex items-center justify-center gap-2 px-6 py-3 disabled:opacity-60">
+              {isSaving ? 'Saving...' : 'Save profile'}
+              {!isSaving && <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="m5 12 4 4L19 6" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+            </button>
+          </div>
+        </form>
+
+        <section aria-labelledby="mood-frequency-title" className="surface relative min-w-0 overflow-hidden p-5 sm:p-7 lg:sticky lg:top-24">
+          <div className="absolute -right-16 -top-20 h-48 w-48 rounded-full bg-violet-500/[0.08] blur-3xl" />
+          <div className="relative">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[0.68rem] font-bold uppercase tracking-[0.2em] text-lavender-300">Listening pulse</p>
+                <h2 id="mood-frequency-title" className="mt-1 text-xl font-bold tracking-[-0.035em] text-white sm:text-2xl">Your Mood Check-ins</h2>
+              </div>
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-lavender-300/15 bg-lavender-300/[0.07] text-lavender-200">
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M3 12h3l2-6 4 12 3-9 2 3h4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </span>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-zinc-500">A visual rhythm of the moods behind your recommendations.</p>
+            {areInsightsLoading ? (
+              <div className="mt-5"><LoadingState label="Loading mood check-ins..." /></div>
+            ) : insightsError ? (
+              <div className="mt-5"><ErrorMessage message={`We couldn't load your mood insights. ${insightsError}`} /></div>
+            ) : (
+              <MoodFrequencyChart moodFrequency={moodFrequency} totalCheckIns={totalCheckIns} />
+            )}
+            <p className="mt-5 border-t border-white/[0.08] pt-4 text-xs leading-5 text-zinc-600">These insights summarize the moods you selected in MoodTune. They do not measure or diagnose your emotional health.</p>
+          </div>
+        </section>
       </div>
-      <form onSubmit={save} className="surface relative space-y-6 overflow-hidden p-5 sm:p-8">
-        <span className="absolute inset-x-16 top-0 h-px bg-gradient-to-r from-transparent via-lavender-300/50 to-transparent" />
-        <ErrorMessage message={error} />
-        {notice && <p className="notice-success">{notice}</p>}
-
-        <div className="flex min-w-0 flex-wrap items-center gap-4">
-          {displayedAvatar ? <img src={displayedAvatar} alt="Profile avatar" className="h-20 w-20 rounded-2xl border border-lavender-300/40 object-cover shadow-[0_0_24px_rgba(167,139,250,.15)]" /> : <div aria-hidden="true" className="flex h-20 w-20 items-center justify-center rounded-2xl border border-lavender-300/20 bg-lavender-300/[0.1] text-2xl font-bold text-lavender-200">{displayName.trim().slice(0, 1).toUpperCase() || '?'}</div>}
-          <label className="min-w-0 flex-1 basis-52 text-sm font-medium text-zinc-200">Profile image <span className="font-normal text-zinc-500">(optional, 5 MB max)</span><input type="file" accept="image/*" onChange={(event) => setImageFile(event.target.files?.[0] || null)} className="mt-2 block w-full max-w-full text-sm text-zinc-400 file:mr-2 file:rounded-lg file:border-0 file:bg-lavender-300/[0.12] file:px-3 file:py-2 file:text-lavender-100 sm:file:mr-3" /></label>
-        </div>
-
-        <div className="grid gap-5 sm:grid-cols-2">
-          <label className="block text-sm font-medium text-zinc-200">Username<input value={username} readOnly className="input-control cursor-not-allowed opacity-60" /></label>
-          <label className="block text-sm font-medium text-zinc-200">Account email<input value={accountEmail} readOnly className="input-control cursor-not-allowed opacity-60" /></label>
-        </div>
-        <label className="block text-sm font-medium text-zinc-200">Name<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength="80" className="input-control" /></label>
-        <label className="block text-sm font-medium text-zinc-200">About me <span className="font-normal text-zinc-500">({bio.length}/500)</span><textarea value={bio} onChange={(event) => setBio(event.target.value)} maxLength="500" rows="4" placeholder="Tell us a little about your music taste." className="input-control resize-y" /></label>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <label className="block text-sm font-medium text-zinc-200">Preferred genres<p className="mt-1 text-xs font-normal text-zinc-500">Separate up to 20 genres with commas.</p><input value={genres} onChange={(event) => setGenres(event.target.value)} placeholder="pop, jazz, indie" className="input-control" /></label>
-          <label className="block text-sm font-medium text-zinc-200">Favorite artists<p className="mt-1 text-xs font-normal text-zinc-500">Separate up to 20 artists with commas.</p><input value={artists} onChange={(event) => setArtists(event.target.value)} placeholder="Adele, Coldplay, The Weeknd" className="input-control" /></label>
-        </div>
-        <button disabled={isSaving} className="button-primary px-5 py-3 disabled:opacity-60">{isSaving ? 'Saving…' : 'Save profile'}</button>
-      </form>
-      <section aria-labelledby="mood-frequency-title" className="surface relative overflow-hidden p-5 sm:p-8">
-        <span className="absolute inset-x-16 top-0 h-px bg-gradient-to-r from-transparent via-lavender-300/50 to-transparent" />
-        <h2 id="mood-frequency-title" className="text-xl font-bold tracking-[-0.03em] text-white sm:text-2xl">Your Mood Check-ins</h2>
-        <p className="mt-2 text-sm leading-6 text-zinc-400">Based on the moods you selected when requesting recommendations.</p>
-        {areInsightsLoading ? (
-          <div className="mt-5"><LoadingState label="Loading mood check-ins…" /></div>
-        ) : insightsError ? (
-          <div className="mt-5"><ErrorMessage message={`We couldn't load your mood insights. ${insightsError}`} /></div>
-        ) : (
-          <MoodFrequencyChart moodFrequency={moodFrequency} totalCheckIns={totalCheckIns} />
-        )}
-        <p className="mt-5 border-t border-white/[0.08] pt-4 text-xs leading-5 text-zinc-500">These insights summarize the moods you selected in MoodTune. They do not measure or diagnose your emotional health.</p>
-      </section>
     </section>
+  )
+}
+
+function SectionHeading({ number, title }) {
+  return (
+    <div className="mb-4 flex items-center gap-3">
+      <span className="grid h-7 w-7 place-items-center rounded-lg bg-lavender-300/[0.08] text-xs text-lavender-200">{number}</span>
+      <h3 className="text-sm font-semibold text-zinc-200">{title}</h3>
+      <span className="h-px flex-1 bg-white/[0.06]" />
+    </div>
+  )
+}
+
+function InfoCard({ icon, label, value }) {
+  return (
+    <div className="profile-info-card min-w-0">
+      <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-lavender-300/10 bg-lavender-300/[0.07] text-sm font-bold text-lavender-200">{icon}</span>
+      <div className="min-w-0">
+        <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-zinc-600">{label}</p>
+        <p className="mt-1 truncate text-sm text-zinc-200" title={value}>{value}</p>
+      </div>
+    </div>
   )
 }
