@@ -56,9 +56,10 @@ class InMemoryUserRepository:
     def record_history(self, user_id: str, record: dict[str, object]) -> None:
         self.history.setdefault(user_id, []).append({**record, "created_at": self._now()})
 
-    def list_history(self, user_id: str, limit: int) -> list[dict[str, object]]:
+    def list_history(self, user_id: str, limit: int | None = None) -> list[dict[str, object]]:
         records = self.history.get(user_id, [])
-        return [deepcopy(record) for record in reversed(records[-limit:])]
+        selected = records[-limit:] if limit is not None else records
+        return [deepcopy(record) for record in reversed(selected)]
 
     def record_search(self, user_id: str | None, query: str, region: str | None) -> None:
         now = self._now()

@@ -10,10 +10,17 @@ from backend.repositories.in_memory import InMemoryUserRepository
 @pytest.fixture()
 def client():
     repository = InMemoryUserRepository()
+
+    def verify_token(token):
+        users = {"valid-token": "test-user", "other-token": "other-user"}
+        if token not in users:
+            raise ValueError()
+        return {"uid": users[token]}
+
     app = create_app(
         settings=Settings("test-secret", ["http://localhost:5173"], None, None, None, None),
         repository=repository,
-        token_verifier=lambda token: {"uid": "test-user"} if token == "valid-token" else (_ for _ in ()).throw(ValueError()),
+        token_verifier=verify_token,
     )
     app.config["TESTING"] = True
     return app.test_client()
@@ -119,3 +126,59 @@ def test_rejects_invalid_bearer_token(client) -> None:
         json={"mood": "happy", "mode": "match_mood"},
     )
     assert response.status_code == 401
+
+
+def test_mood_frequency_requires_authentication(client) -> None:
+    assert client.get("/api/insights/mood-frequency").status_code == 401
+    assert client.get(
+        "/api/insights/mood-frequency",
+        headers={"Authorization": "Bearer bad-token"},
+    ).status_code == 401
+
+
+def test_mood_frequency_aggregates_complete_current_mood_history(client) -> None:
+    repository = client.application.extensions["user_repository"]
+    for _ in range(55):
+        repository.record_history("test-user", {"current_mood": "stressed", "target_mood": "happy"})
+    for _ in range(5):
+        repository.record_history("test-user", {"current_mood": "happy", "target_mood": "stressed"})
+
+    response = client.get("/api/insights/mood-frequency", headers=AUTH)
+
+    assert response.status_code == 200
+    assert response.get_json() == {
+        "mood_frequency": [
+            {"mood": "stressed", "count": 55},
+            {"mood": "happy", "count": 5},
+        ],
+        "total_check_ins": 60,
+    }
+
+
+def test_mood_frequency_returns_empty_insight_without_history(client) -> None:
+    response = client.get("/api/insights/mood-frequency", headers=AUTH)
+
+    assert response.status_code == 200
+    assert response.get_json() == {"mood_frequency": [], "total_check_ins": 0}
+
+
+def test_mood_frequency_keeps_authenticated_users_isolated(client) -> None:
+    repository = client.application.extensions["user_repository"]
+    repository.record_history("test-user", {"current_mood": "calm", "target_mood": "calm"})
+    for _ in range(3):
+        repository.record_history("other-user", {"current_mood": "sad", "target_mood": "happy"})
+
+    first_user = client.get("/api/insights/mood-frequency?user_id=other-user", headers=AUTH)
+    other_user = client.get(
+        "/api/insights/mood-frequency?user_id=test-user",
+        headers={"Authorization": "Bearer other-token"},
+    )
+
+    assert first_user.get_json() == {
+        "mood_frequency": [{"mood": "calm", "count": 1}],
+        "total_check_ins": 1,
+    }
+    assert other_user.get_json() == {
+        "mood_frequency": [{"mood": "sad", "count": 3}],
+        "total_check_ins": 3,
+    }
