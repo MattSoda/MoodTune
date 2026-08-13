@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import SpotifyPlayer, { isUsableSpotifyTrackId } from './SpotifyPlayer'
+import { isUsableSpotifyTrackId } from '../utils/spotify'
 
 export default function SongCard({ song, onFavorite, onRemove, isFavorite = false, isSpotifyPlayerActive = false, onToggleSpotifyPlayer }) {
   const hasSpotifyPlayback = typeof onToggleSpotifyPlayer === 'function' && isUsableSpotifyTrackId(song.track_id)
@@ -43,7 +43,6 @@ export default function SongCard({ song, onFavorite, onRemove, isFavorite = fals
           {onRemove && <button type="button" onClick={() => onRemove(song.track_id)} className="rounded-xl border border-rose-400/35 px-3 py-2.5 text-sm text-rose-100 transition hover:border-rose-300/60 hover:bg-rose-400/[0.08]">Remove</button>}
         </div>
       </div>
-      {hasSpotifyPlayback && isSpotifyPlayerActive && <SpotifyPlayer trackId={spotifyTrackId} />}
     </article>
   )
 }

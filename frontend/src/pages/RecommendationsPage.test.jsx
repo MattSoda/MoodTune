@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { vi } from 'vitest'
 
 const { FIRST_TRACK_ID, SECOND_TRACK_ID } = vi.hoisted(() => ({
@@ -8,7 +8,7 @@ const { FIRST_TRACK_ID, SECOND_TRACK_ID } = vi.hoisted(() => ({
   SECOND_TRACK_ID: '7qiZfU4dY1lWllzX7mPBI3',
 }))
 
-vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ user: { uid: 'listener-1' } }) }))
+vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ user: { uid: 'listener-1' }, logout: vi.fn() }) }))
 vi.mock('../services/moodTuneApi', () => ({
   moodTuneApi: {
     recommend: vi.fn().mockResolvedValue({
@@ -23,10 +23,20 @@ vi.mock('../services/moodTuneApi', () => ({
   },
 }))
 import { moodTuneApi } from '../services/moodTuneApi'
+import AppLayout from '../layouts/AppLayout'
 import RecommendationsPage from './RecommendationsPage'
 
 function renderRecommendations() {
-  render(<MemoryRouter initialEntries={[{ pathname: '/recommendations', state: { mood: 'sad', mode: 'feel_better' } }]}><RecommendationsPage /></MemoryRouter>)
+  render(
+    <MemoryRouter initialEntries={[{ pathname: '/recommendations', state: { mood: 'sad', mode: 'feel_better' } }]}>
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route path="/recommendations" element={<RecommendationsPage />} />
+          <Route path="/profile" element={<h1>Profile destination</h1>} />
+        </Route>
+      </Routes>
+    </MemoryRouter>,
+  )
 }
 
 beforeEach(() => {
@@ -85,6 +95,79 @@ test('hiding the active player removes its iframe', async () => {
   await user.click(screen.getByRole('button', { name: 'Hide player' }))
 
   expect(screen.queryByTitle('Spotify player')).not.toBeInTheDocument()
+})
+
+test('keeps the same player mounted while navigating to another route', async () => {
+  const user = userEvent.setup()
+  renderRecommendations()
+  await screen.findByText('Brighter Day')
+  await user.click(screen.getAllByRole('button', { name: 'Play' })[0])
+  const player = screen.getByTitle('Spotify player')
+
+  await user.click(screen.getByRole('link', { name: 'Profile' }))
+
+  expect(screen.getByRole('heading', { name: 'Profile destination' })).toBeInTheDocument()
+  expect(screen.getByTitle('Spotify player')).toBe(player)
+  expect(screen.getByText('Brighter Day')).toBeInTheDocument()
+})
+
+test('navigates the recommendation queue and disables first and last boundaries', async () => {
+  const user = userEvent.setup()
+  renderRecommendations()
+  await screen.findByText('Brighter Day')
+  await user.click(screen.getAllByRole('button', { name: 'Play' })[0])
+  let playerBar = screen.getByTestId('persistent-spotify-player')
+
+  expect(within(playerBar).getByRole('button', { name: 'Previous track' })).toBeDisabled()
+  expect(within(playerBar).getByRole('button', { name: 'Next track' })).toBeEnabled()
+  await user.click(within(playerBar).getByRole('button', { name: 'Next track' }))
+
+  playerBar = screen.getByTestId('persistent-spotify-player')
+  expect(screen.getByTitle('Spotify player')).toHaveAttribute('src', `https://open.spotify.com/embed/track/${SECOND_TRACK_ID}`)
+  expect(within(playerBar).getByText('Second Song')).toBeInTheDocument()
+  expect(within(playerBar).getByRole('button', { name: 'Previous track' })).toBeEnabled()
+  expect(within(playerBar).getByRole('button', { name: 'Next track' })).toBeDisabled()
+  expect(within(playerBar).getByRole('button', { name: 'Play' })).toBeInTheDocument()
+
+  await user.click(within(playerBar).getByRole('button', { name: 'Previous track' }))
+  expect(screen.getByTitle('Spotify player')).toHaveAttribute('src', `https://open.spotify.com/embed/track/${FIRST_TRACK_ID}`)
+})
+
+test('uses the embed controller state for Play and Pause controls', async () => {
+  const user = userEvent.setup()
+  renderRecommendations()
+  await screen.findByText('Brighter Day')
+  await user.click(screen.getAllByRole('button', { name: 'Play' })[0])
+  const playerBar = screen.getByTestId('persistent-spotify-player')
+
+  await user.click(within(playerBar).getByRole('button', { name: 'Pause' }))
+  expect(within(playerBar).getByRole('button', { name: 'Play' })).toBeInTheDocument()
+  await user.click(within(playerBar).getByRole('button', { name: 'Play' }))
+  expect(within(playerBar).getByRole('button', { name: 'Pause' })).toBeInTheDocument()
+})
+
+test('closing stops playback, removes the embed, and restores page spacing', async () => {
+  const user = userEvent.setup()
+  renderRecommendations()
+  await screen.findByText('Brighter Day')
+  await user.click(screen.getAllByRole('button', { name: 'Play' })[0])
+
+  expect(screen.getByTestId('app-content')).toHaveClass('pb-64', 'sm:pb-52')
+  await user.click(within(screen.getByTestId('persistent-spotify-player')).getByRole('button', { name: 'Close player' }))
+
+  expect(screen.queryByTestId('persistent-spotify-player')).not.toBeInTheDocument()
+  expect(screen.queryByTitle('Spotify player')).not.toBeInTheDocument()
+  expect(screen.getByTestId('app-content')).not.toHaveClass('pb-64', 'sm:pb-52')
+})
+
+test('uses a mobile-safe fixed layout and reserves content space', async () => {
+  const user = userEvent.setup()
+  renderRecommendations()
+  await screen.findByText('Brighter Day')
+  await user.click(screen.getAllByRole('button', { name: 'Play' })[0])
+
+  expect(screen.getByTestId('persistent-spotify-player')).toHaveClass('fixed', 'inset-x-2', 'bottom-2', 'sm:inset-x-auto', 'sm:right-4')
+  expect(screen.getByTestId('app-content')).toHaveClass('pb-64', 'sm:pb-52')
 })
 
 test('a missing track ID keeps the song visible without Spotify controls', async () => {

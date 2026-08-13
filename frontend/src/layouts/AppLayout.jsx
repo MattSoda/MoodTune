@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import PersistentSpotifyPlayer from '../components/PersistentSpotifyPlayer'
 import { useAuth } from '../context/AuthContext'
+import { PlayerProvider, usePlayer } from '../context/PlayerContext'
 
 const protectedLinks = [
   ['Favorites', '/favorites'],
@@ -27,8 +29,9 @@ function LogoutConfirmation({ isLoggingOut, onCancel, onConfirm }) {
   </div>
 }
 
-export default function AppLayout() {
+function AppLayoutContent() {
   const { user, logout } = useAuth()
+  const { closePlayer, isPlayerOpen } = usePlayer()
   const navigate = useNavigate()
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -36,6 +39,7 @@ export default function AppLayout() {
   const signOut = async () => {
     setIsLoggingOut(true)
     try {
+      closePlayer()
       await logout()
       setShowLogoutConfirmation(false)
       navigate('/')
@@ -89,8 +93,13 @@ export default function AppLayout() {
           </div>
         </nav>
       </header>
-      <main className="mx-auto min-w-0 max-w-[86rem] px-4 py-6 sm:px-6 sm:py-10 lg:py-12"><Outlet /></main>
+      <main data-testid="app-content" className={`mx-auto min-w-0 max-w-[86rem] px-4 py-6 sm:px-6 sm:py-10 lg:py-12 ${isPlayerOpen ? 'pb-64 sm:pb-52' : ''}`}><Outlet /></main>
+      <PersistentSpotifyPlayer />
       {showLogoutConfirmation && <LogoutConfirmation isLoggingOut={isLoggingOut} onCancel={() => setShowLogoutConfirmation(false)} onConfirm={signOut} />}
     </div>
   )
+}
+
+export default function AppLayout() {
+  return <PlayerProvider><AppLayoutContent /></PlayerProvider>
 }
