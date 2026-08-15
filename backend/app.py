@@ -6,6 +6,13 @@ from pathlib import Path
 import re
 import sys
 
+from dotenv import load_dotenv
+
+# Load project-local settings before the module-level Flask app is created.
+# Flask's development runner otherwise loads .env too late when this file is
+# launched directly with `python backend/app.py`.
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+
 # Support both `python -m flask` from the project root and `python app.py`
 # when the current directory is `backend`.
 if __package__ in {None, ""}:
@@ -19,6 +26,7 @@ from backend.config.settings import Settings
 from backend.repositories.firestore import FirestoreUserRepository
 from backend.repositories.unavailable import FirebaseUnavailableRepository
 from backend.services.catalogue_service import CatalogueService
+from backend.services.insights_service import InsightsService
 from backend.services.recommendation_service import RecommendationService
 from backend.services.search_discovery_service import SearchDiscoveryService
 from backend.utils import bounded_limit, json_body, success
@@ -155,6 +163,7 @@ def create_app(settings: Settings | None = None, repository=None, token_verifier
     app.extensions["token_verifier"] = token_verifier
     app.extensions["firebase_error"] = firebase_error
     catalogue = CatalogueService()
+    insights_service = InsightsService(repository)
     recommendation_service = RecommendationService(repository)
     search_discovery_service = SearchDiscoveryService(repository, catalogue)
 
@@ -277,6 +286,11 @@ def create_app(settings: Settings | None = None, repository=None, token_verifier
     @require_auth
     def history():
         return success({"history": repository.list_history(g.user_id, bounded_limit(request.args.get("limit")))})
+
+    @app.get("/api/insights/mood-frequency")
+    @require_auth
+    def mood_frequency():
+        return success(insights_service.mood_frequency(g.user_id))
 
     return app
 

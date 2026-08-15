@@ -4,6 +4,7 @@ import LoadingState from '../components/LoadingState'
 import SongCard from '../components/SongCard'
 import { SONG_MOODS } from '../constants/moods'
 import { useAuth } from '../context/AuthContext'
+import { usePlayer } from '../context/PlayerContext'
 import useRequireAuth from '../hooks/useRequireAuth'
 import { moodTuneApi } from '../services/moodTuneApi'
 import { saveSearchDraft, takeSearchDraft } from '../utils/searchDraft'
@@ -54,6 +55,7 @@ function SearchDiscovery({ discovery, onChoose, onDelete, onClear }) {
 
 export default function SearchPage() {
   const { user } = useAuth()
+  const { currentTrack, isPlayerOpen, openPlayer, closePlayer } = usePlayer()
   const requireAuth = useRequireAuth()
   const [query, setQuery] = useState('')
   const [mood, setMood] = useState('')
@@ -64,7 +66,6 @@ export default function SearchPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const [showDiscovery, setShowDiscovery] = useState(true)
-  const [activeTrackId, setActiveTrackId] = useState(null)
   const [discovery, setDiscovery] = useState(null)
   const requestId = useRef(0)
   const debounceTimer = useRef(null)
@@ -84,7 +85,6 @@ export default function SearchPage() {
     setError('')
     setNotice('')
     setIsLoading(true)
-    setActiveTrackId(null)
     try {
       const response = await moodTuneApi.search({ q: nextQuery, mood: nextMood || undefined, genre: nextGenre || undefined, limit: 20, record: record || undefined })
       if (currentRequest === requestId.current) setResults(response.results)
@@ -182,11 +182,14 @@ export default function SearchPage() {
       setError(requestError.message)
     }
   }
-  const toggleSpotifyPlayer = (trackId) => setActiveTrackId((currentTrackId) => currentTrackId === trackId ? null : trackId)
+  const toggleSpotifyPlayer = (trackId, index) => {
+    if (isPlayerOpen && currentTrack?.track_id?.trim() === trackId) closePlayer()
+    else openPlayer(results, index)
+  }
 
   return <section className="content-page"><div className="page-header"><p className="page-eyebrow">Explore the catalogue</p><h1 className="page-title">Find your next favorite</h1><p className="page-copy">Search by song, artist, mood, or genre and discover something that fits.</p></div>
     <form onSubmit={search} className="filter-panel grid gap-3 sm:grid-cols-6"><label className="sm:col-span-3"><span className="sr-only">Search songs or artists</span><input value={query} onChange={(event) => { setQuery(event.target.value); setHasSearched(false); setShowDiscovery(true) }} placeholder="Search songs or artists" className="input-control mt-0" /></label><MoodFilter value={mood} onChange={(nextMood) => { setMood(nextMood); setHasSearched(false) }} /><button className="button-primary sm:row-span-2">Search</button><label className="sm:col-span-5"><span className="sr-only">Genre filter</span><input value={genre} onChange={(event) => { setGenre(event.target.value); setHasSearched(false) }} placeholder="Optional genre filter" className="input-control mt-0" /></label></form>
     {showDiscovery && <SearchDiscovery discovery={discovery} onChoose={chooseSuggestion} onDelete={deleteRecent} onClear={clearRecent} />}
-    <ErrorMessage message={error} />{notice && <p className="notice-success">{notice}</p>}{isLoading && <LoadingState label="Searching the catalogue…" />}{!isLoading && results.length > 0 && <div className="space-y-3">{results.map((song) => <SongCard key={song.track_id} song={song} onFavorite={user ? saveFavorite : undefined} isSpotifyPlayerActive={typeof song.track_id === 'string' && activeTrackId === song.track_id.trim()} onToggleSpotifyPlayer={toggleSpotifyPlayer} />)}</div>}{!isLoading && hasSearched && query && results.length === 0 && !error && user && <p className="empty-state">No matching songs found. Try a broader search.</p>}
+    <ErrorMessage message={error} />{notice && <p className="notice-success">{notice}</p>}{isLoading && <LoadingState label="Searching the catalogue…" />}{!isLoading && results.length > 0 && <div className="space-y-3">{results.map((song, index) => <SongCard key={song.track_id || `search-result-${index}`} song={song} onFavorite={user ? saveFavorite : undefined} isSpotifyPlayerActive={isPlayerOpen && typeof song.track_id === 'string' && currentTrack?.track_id?.trim() === song.track_id.trim()} onToggleSpotifyPlayer={(trackId) => toggleSpotifyPlayer(trackId, index)} />)}</div>}{!isLoading && hasSearched && query && results.length === 0 && !error && user && <p className="empty-state">No matching songs found. Try a broader search.</p>}
   </section>
 }

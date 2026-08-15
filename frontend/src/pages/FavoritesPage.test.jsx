@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
+import PersistentSpotifyPlayer from '../components/PersistentSpotifyPlayer'
+import { PlayerProvider } from '../context/PlayerContext'
 
 const { TRACK_ID } = vi.hoisted(() => ({ TRACK_ID: '4uLU6hMCjMI75M1A2tKUQC' }))
 
@@ -15,7 +17,7 @@ import FavoritesPage from './FavoritesPage'
 
 test('plays a saved Spotify track from favorites', async () => {
   const user = userEvent.setup()
-  render(<FavoritesPage />)
+  render(<PlayerProvider><FavoritesPage /><PersistentSpotifyPlayer /></PlayerProvider>)
   await screen.findByText('Saved Track')
 
   await user.click(screen.getByRole('button', { name: 'Play' }))

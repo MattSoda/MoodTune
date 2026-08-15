@@ -23,6 +23,7 @@ accepts a client-supplied UID by itself.
 | GET/POST | `/api/favorites` | Required | List or add a favorite |
 | DELETE | `/api/favorites/<track_id>` | Required | Remove a favorite |
 | GET | `/api/history` | Required | List recommendation history |
+| GET | `/api/insights/mood-frequency` | Required | Count current moods across the authenticated user's complete history |
 
 ## Validation and errors
 
